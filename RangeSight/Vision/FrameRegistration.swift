@@ -153,11 +153,14 @@ public struct FrameRegistrationResult: Codable, Equatable, Sendable {
 
 public enum FrameRegistrationFeatureExtractor {
     public static func features(from frame: VisionFrame) throws -> [RegistrationFeature] {
-        guard case .fixtureFeatures(let features) = frame.content else {
+        switch frame.content {
+        case .fixtureFeatures(let features):
+            return features
+        case .fixtureRegisteredFrame(let fixture):
+            return fixture.features
+        default:
             throw FrameRegistrationValidationError.invalidFrameContent
         }
-
-        return features
     }
 }
 
@@ -444,7 +447,7 @@ public struct FrameRegistrationProcessor: VisionFrameProcessor {
 public enum FrameRegistrationDiagnostics {
     public static func diagnostics(for result: FrameRegistrationResult) throws -> [VisionFrameDiagnostic] {
         var diagnostics = [
-            try VisionFrameDiagnostic(key: "registrationStatus", value: statusCode(result.status)),
+            try VisionFrameDiagnostic(key: "registrationStatus", value: statusCodeForDiagnostics(result.status)),
             try VisionFrameDiagnostic(key: "registrationConfidence", value: result.confidence),
             try VisionFrameDiagnostic(key: "matchedFeatureCount", value: Double(result.matchedFeatureCount))
         ]
@@ -473,7 +476,7 @@ public enum FrameRegistrationDiagnostics {
         return diagnostics
     }
 
-    private static func statusCode(_ status: FrameRegistrationStatus) -> Double {
+    public static func statusCodeForDiagnostics(_ status: FrameRegistrationStatus) -> Double {
         switch status {
         case .referenceReady: return 1
         case .registered: return 2

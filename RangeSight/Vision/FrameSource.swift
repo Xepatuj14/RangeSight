@@ -25,6 +25,18 @@ public enum VisionFrameContent: Codable, Equatable, Sendable {
     case metadataOnly
     case fixtureData(String)
     case fixtureFeatures([RegistrationFeature])
+    case fixtureLuminance(LuminanceFrame)
+    case fixtureRegisteredFrame(RegisteredFrameFixture)
+}
+
+public struct RegisteredFrameFixture: Codable, Equatable, Sendable {
+    public let luminance: LuminanceFrame
+    public let features: [RegistrationFeature]
+
+    public init(luminance: LuminanceFrame, features: [RegistrationFeature]) {
+        self.luminance = luminance
+        self.features = features
+    }
 }
 
 public struct VisionFrame: Codable, Equatable, Sendable {
