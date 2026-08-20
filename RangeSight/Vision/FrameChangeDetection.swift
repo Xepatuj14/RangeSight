@@ -24,6 +24,28 @@ public struct LuminanceFrame: Codable, Equatable, Sendable {
     }
 }
 
+public struct AlignedLuminanceFrame: Codable, Equatable, Sendable {
+    public let luminance: LuminanceFrame
+    public let validPixels: [Bool]
+
+    public init(luminance: LuminanceFrame, validPixels: [Bool]) throws {
+        guard validPixels.count == luminance.width * luminance.height else {
+            throw FrameChangeDetectionValidationError.invalidValidityMask
+        }
+
+        self.luminance = luminance
+        self.validPixels = validPixels
+    }
+
+    public var validPixelCount: Int {
+        validPixels.reduce(0) { $0 + ($1 ? 1 : 0) }
+    }
+
+    public var overlapRatio: Double {
+        Double(validPixelCount) / Double(validPixels.count)
+    }
+}
+
 public struct NormalizedImageRegion: Codable, Equatable, Sendable {
     public let minX: Double
     public let minY: Double
@@ -111,12 +133,14 @@ public struct ChangeDetectionConfiguration: Codable, Equatable, Sendable {
     public let minimumRegionAreaPixels: Int
     public let maximumRegionAreaRatio: Double
     public let globalChangePixelRatio: Double
+    public let minimumValidOverlapRatio: Double
 
     public init(
         pixelDifferenceThreshold: Double = 0.18,
         minimumRegionAreaPixels: Int = 2,
         maximumRegionAreaRatio: Double = 0.2,
-        globalChangePixelRatio: Double = 0.45
+        globalChangePixelRatio: Double = 0.45,
+        minimumValidOverlapRatio: Double = 0.5
     ) throws {
         guard (0...1).contains(pixelDifferenceThreshold), pixelDifferenceThreshold > 0 else {
             throw FrameChangeDetectionValidationError.invalidConfiguration
@@ -130,11 +154,15 @@ public struct ChangeDetectionConfiguration: Codable, Equatable, Sendable {
         guard (0...1).contains(globalChangePixelRatio), globalChangePixelRatio > 0 else {
             throw FrameChangeDetectionValidationError.invalidConfiguration
         }
+        guard (0...1).contains(minimumValidOverlapRatio), minimumValidOverlapRatio > 0 else {
+            throw FrameChangeDetectionValidationError.invalidConfiguration
+        }
 
         self.pixelDifferenceThreshold = pixelDifferenceThreshold
         self.minimumRegionAreaPixels = minimumRegionAreaPixels
         self.maximumRegionAreaRatio = maximumRegionAreaRatio
         self.globalChangePixelRatio = globalChangePixelRatio
+        self.minimumValidOverlapRatio = minimumValidOverlapRatio
     }
 
     public static let `default` = try! ChangeDetectionConfiguration()
@@ -146,8 +174,29 @@ public struct ChangeDetectionResult: Codable, Equatable, Sendable {
     public let frameTimestamp: TimeInterval
     public let changedPixelRatio: Double
     public let maximumMagnitude: Double
+    public let validComparisonPixelRatio: Double
     public let candidates: [ChangeCandidate]
     public let registrationStatus: FrameRegistrationStatus
+
+    public init(
+        status: ChangeDetectionStatus,
+        frameSequenceIndex: Int,
+        frameTimestamp: TimeInterval,
+        changedPixelRatio: Double,
+        maximumMagnitude: Double,
+        validComparisonPixelRatio: Double = 1,
+        candidates: [ChangeCandidate],
+        registrationStatus: FrameRegistrationStatus
+    ) {
+        self.status = status
+        self.frameSequenceIndex = frameSequenceIndex
+        self.frameTimestamp = frameTimestamp
+        self.changedPixelRatio = changedPixelRatio
+        self.maximumMagnitude = maximumMagnitude
+        self.validComparisonPixelRatio = validComparisonPixelRatio
+        self.candidates = candidates
+        self.registrationStatus = registrationStatus
+    }
 
     public var hasLocalizedCandidates: Bool {
         !candidates.isEmpty
@@ -173,6 +222,20 @@ public struct FrameChangeDetector: Sendable {
                 frameTimestamp: currentFrame.timestamp,
                 changedPixelRatio: 0,
                 maximumMagnitude: 0,
+                validComparisonPixelRatio: 0,
+                candidates: [],
+                registrationStatus: registration.status
+            )
+        }
+
+        guard let transform = registration.transform else {
+            return ChangeDetectionResult(
+                status: .invalidFrame,
+                frameSequenceIndex: currentFrame.sequenceIndex,
+                frameTimestamp: currentFrame.timestamp,
+                changedPixelRatio: 0,
+                maximumMagnitude: 0,
+                validComparisonPixelRatio: 0,
                 candidates: [],
                 registrationStatus: registration.status
             )
@@ -188,6 +251,23 @@ public struct FrameChangeDetector: Sendable {
                 frameTimestamp: currentFrame.timestamp,
                 changedPixelRatio: 0,
                 maximumMagnitude: 0,
+                validComparisonPixelRatio: 0,
+                candidates: [],
+                registrationStatus: registration.status
+            )
+        }
+
+        let alignedCurrent = try align(current: current, intoReferenceCoordinatesUsing: transform)
+        let validPixelCount = alignedCurrent.validPixelCount
+        let validPixelRatio = alignedCurrent.overlapRatio
+        guard validPixelRatio >= configuration.minimumValidOverlapRatio, validPixelCount > 0 else {
+            return ChangeDetectionResult(
+                status: .skippedDueToRegistration,
+                frameSequenceIndex: currentFrame.sequenceIndex,
+                frameTimestamp: currentFrame.timestamp,
+                changedPixelRatio: 0,
+                maximumMagnitude: 0,
+                validComparisonPixelRatio: validPixelRatio,
                 candidates: [],
                 registrationStatus: registration.status
             )
@@ -199,7 +279,11 @@ public struct FrameChangeDetector: Sendable {
         var maximumMagnitude = 0.0
 
         for index in 0..<totalPixels {
-            let magnitude = abs(current.pixels[index] - reference.pixels[index])
+            guard alignedCurrent.validPixels[index] else {
+                continue
+            }
+
+            let magnitude = abs(alignedCurrent.luminance.pixels[index] - reference.pixels[index])
             maximumMagnitude = max(maximumMagnitude, magnitude)
 
             if magnitude >= configuration.pixelDifferenceThreshold {
@@ -208,7 +292,7 @@ public struct FrameChangeDetector: Sendable {
             }
         }
 
-        let changedRatio = Double(changedCount) / Double(totalPixels)
+        let changedRatio = Double(changedCount) / Double(validPixelCount)
         guard changedRatio < configuration.globalChangePixelRatio else {
             return ChangeDetectionResult(
                 status: .globalChangeRejected,
@@ -216,6 +300,7 @@ public struct FrameChangeDetector: Sendable {
                 frameTimestamp: currentFrame.timestamp,
                 changedPixelRatio: changedRatio,
                 maximumMagnitude: maximumMagnitude,
+                validComparisonPixelRatio: validPixelRatio,
                 candidates: [],
                 registrationStatus: registration.status
             )
@@ -224,7 +309,7 @@ public struct FrameChangeDetector: Sendable {
         let candidates = try connectedComponents(
             changed: changed,
             reference: reference,
-            current: current,
+            current: alignedCurrent.luminance,
             frame: currentFrame,
             registration: registration
         )
@@ -235,6 +320,7 @@ public struct FrameChangeDetector: Sendable {
             frameTimestamp: currentFrame.timestamp,
             changedPixelRatio: changedRatio,
             maximumMagnitude: maximumMagnitude,
+            validComparisonPixelRatio: validPixelRatio,
             candidates: candidates,
             registrationStatus: registration.status
         )
@@ -258,6 +344,73 @@ public struct FrameChangeDetector: Sendable {
         }
 
         return luminanceFrame
+    }
+
+    private func align(
+        current: LuminanceFrame,
+        intoReferenceCoordinatesUsing transform: RegistrationTransform
+    ) throws -> AlignedLuminanceFrame {
+        var alignedPixels = Array(repeating: 0.0, count: current.width * current.height)
+        var validPixels = Array(repeating: false, count: current.width * current.height)
+
+        for y in 0..<current.height {
+            for x in 0..<current.width {
+                let referenceX = (Double(x) + 0.5) / Double(current.width)
+                let referenceY = (Double(y) + 0.5) / Double(current.height)
+                let currentPoint = inverseApply(transform: transform, referenceX: referenceX, referenceY: referenceY)
+
+                guard (0...1).contains(currentPoint.x), (0...1).contains(currentPoint.y),
+                      let sampled = bilinearSample(current, normalizedX: currentPoint.x, normalizedY: currentPoint.y) else {
+                    continue
+                }
+
+                let index = y * current.width + x
+                alignedPixels[index] = sampled
+                validPixels[index] = true
+            }
+        }
+
+        return try AlignedLuminanceFrame(
+            luminance: try LuminanceFrame(width: current.width, height: current.height, pixels: alignedPixels),
+            validPixels: validPixels
+        )
+    }
+
+    private func inverseApply(
+        transform: RegistrationTransform,
+        referenceX: Double,
+        referenceY: Double
+    ) -> (x: Double, y: Double) {
+        let translatedX = (referenceX - transform.translationX) / transform.scale
+        let translatedY = (referenceY - transform.translationY) / transform.scale
+        let cosine = cos(transform.rotationRadians)
+        let sine = sin(transform.rotationRadians)
+
+        return (
+            x: cosine * translatedX + sine * translatedY,
+            y: -sine * translatedX + cosine * translatedY
+        )
+    }
+
+    private func bilinearSample(_ frame: LuminanceFrame, normalizedX: Double, normalizedY: Double) -> Double? {
+        let pixelX = normalizedX * Double(frame.width) - 0.5
+        let pixelY = normalizedY * Double(frame.height) - 0.5
+
+        guard pixelX >= 0, pixelX <= Double(frame.width - 1),
+              pixelY >= 0, pixelY <= Double(frame.height - 1) else {
+            return nil
+        }
+
+        let x0 = Int(floor(pixelX))
+        let y0 = Int(floor(pixelY))
+        let x1 = min(x0 + 1, frame.width - 1)
+        let y1 = min(y0 + 1, frame.height - 1)
+        let tx = pixelX - Double(x0)
+        let ty = pixelY - Double(y0)
+
+        let top = frame.luminanceAt(x: x0, y: y0) * (1 - tx) + frame.luminanceAt(x: x1, y: y0) * tx
+        let bottom = frame.luminanceAt(x: x0, y: y1) * (1 - tx) + frame.luminanceAt(x: x1, y: y1) * tx
+        return top * (1 - ty) + bottom * ty
     }
 
     private func connectedComponents(
@@ -413,6 +566,7 @@ public struct RegisteredChangeDetectionProcessor: VisionFrameProcessor {
                             frameTimestamp: frame.timestamp,
                             changedPixelRatio: 0,
                             maximumMagnitude: 0,
+                            validComparisonPixelRatio: 1,
                             candidates: [],
                             registrationStatus: .referenceReady
                         )
@@ -428,6 +582,7 @@ public struct RegisteredChangeDetectionProcessor: VisionFrameProcessor {
                             frameTimestamp: frame.timestamp,
                             changedPixelRatio: 0,
                             maximumMagnitude: 0,
+                            validComparisonPixelRatio: 0,
                             candidates: [],
                             registrationStatus: .invalidFrame
                         )
@@ -471,6 +626,7 @@ public enum ChangeDetectionDiagnostics {
         append("changeCandidateCount", Double(result.candidates.count), to: &diagnostics)
         append("changedPixelRatio", result.changedPixelRatio, to: &diagnostics)
         append("maximumChangeMagnitude", result.maximumMagnitude, to: &diagnostics)
+        append("validComparisonPixelRatio", result.validComparisonPixelRatio, to: &diagnostics)
         append("registrationStatusForChange", FrameRegistrationDiagnostics.statusCodeForDiagnostics(result.registrationStatus), to: &diagnostics)
 
         if let firstCandidate = result.candidates.first {
@@ -508,4 +664,5 @@ public enum FrameChangeDetectionValidationError: Error, Equatable {
     case invalidMetric
     case invalidConfiguration
     case incompatibleDimensions
+    case invalidValidityMask
 }

@@ -36,6 +36,10 @@ public struct RegistrationReferenceFrame: Codable, Equatable, Sendable {
 }
 
 public struct RegistrationTransform: Codable, Equatable, Sendable {
+    /// Maps normalized current-frame coordinates into normalized reference-frame coordinates.
+    ///
+    /// Pixel resampling must use the inverse mapping when constructing an aligned current image
+    /// in reference-frame coordinates.
     public let translationX: Double
     public let translationY: Double
     public let rotationRadians: Double
