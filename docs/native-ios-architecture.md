@@ -62,8 +62,9 @@ Slices 1 and 2 were reimplemented natively:
 - Slice 2: Swift domain models, normalized target coordinates, schema-versioned serialization, unit tests.
 - Slice 3: Native scoring/geometry engine for physical coordinate conversion, group metrics, scoring-zone interfaces, score evaluation, and deterministic tests.
 - Slice 4: Native SwiftUI session UX shell for Home, setup, camera setup, live monitor mock, review, summary/history, firearm profile, and settings screens using fake presentation data.
+- Slice 5: Local-first persistence boundary with schema-versioned JSON storage and create/read/update flows for sessions, strings, shots, firearm profiles, and target definitions.
 
-Slice 5 has not been implemented.
+Slice 6 has not been implemented.
 
 ## Package.swift Decision
 

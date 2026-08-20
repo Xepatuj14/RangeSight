@@ -14,6 +14,6 @@ These project documents remain the product and slice-order authority for RangeSi
 
 ## Active Slice
 
-Slice 4: Session UX shell.
+Slice 5: Persistence.
 
-Deliverable: Native Home, setup, live-monitor mock, review, summary/history, firearm profile, and settings screens using fake data. Slice 5 has not started.
+Deliverable: Local storage boundary, schema-versioned store, and create/read/update flows for sessions, strings, shots, target definitions, and firearm profiles. Slice 6 has not started.
