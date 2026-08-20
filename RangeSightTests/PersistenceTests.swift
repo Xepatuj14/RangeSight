@@ -23,7 +23,8 @@ final class PersistenceTests: XCTestCase {
         )
 
         try await repository.upsertRangeSession(session)
-        XCTAssertEqual(try await repository.rangeSession(id: sessionID), session)
+        let fetchedSession = try await repository.rangeSession(id: sessionID)
+        XCTAssertEqual(fetchedSession, session)
 
         let updated = RangeSession(
             id: sessionID,
@@ -37,7 +38,8 @@ final class PersistenceTests: XCTestCase {
         )
 
         try await repository.upsertRangeSession(updated)
-        XCTAssertEqual(try await repository.rangeSessions(), [updated])
+        let fetchedSessions = try await repository.rangeSessions()
+        XCTAssertEqual(fetchedSessions, [updated])
     }
 
     func testRepositoryPersistsStringsAndShotsInStableOrder() async throws {
@@ -96,8 +98,11 @@ final class PersistenceTests: XCTestCase {
         try await repository.upsertShot(secondShot)
         try await repository.upsertShot(firstShot)
 
-        XCTAssertEqual(try await repository.rangeStrings(sessionID: sessionID).map(\.id), [stringID])
-        XCTAssertEqual(try await repository.shots(stringID: stringID).map(\.id), [firstShot.id, secondShot.id])
+        let fetchedStringIDs = try await repository.rangeStrings(sessionID: sessionID).map(\.id)
+        XCTAssertEqual(fetchedStringIDs, [stringID])
+
+        let fetchedShotIDs = try await repository.shots(stringID: stringID).map(\.id)
+        XCTAssertEqual(fetchedShotIDs, [firstShot.id, secondShot.id])
     }
 
     func testRepositoryRejectsUnsupportedSchemaVersion() async throws {
