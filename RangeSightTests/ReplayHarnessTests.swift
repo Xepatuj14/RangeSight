@@ -41,6 +41,22 @@ final class ReplayHarnessTests: XCTestCase {
         XCTAssertEqual(firstEvent.diagnostics, expectedDiagnostics)
     }
 
+    func testVisionPipelineEventRoundTripsThroughJSON() throws {
+        let event = VisionPipelineEvent(
+            frameSequenceIndex: 7,
+            frameTimestamp: 2.4,
+            stage: .targetAcquisition,
+            diagnostics: [
+                try VisionFrameDiagnostic(key: "quality", value: 0.92)
+            ]
+        )
+
+        let encoded = try JSONEncoder().encode(event)
+        let decoded = try JSONDecoder().decode(VisionPipelineEvent.self, from: encoded)
+
+        XCTAssertEqual(decoded, event)
+    }
+
     func testReplayManifestSortsGroundTruthByTimestamp() throws {
         let manifest = try ReplayManifest(
             id: "fixture-ground-truth",

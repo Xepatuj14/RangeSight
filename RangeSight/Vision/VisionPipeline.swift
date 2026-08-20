@@ -1,4 +1,4 @@
-public enum VisionPipelineStage: String, CaseIterable, Sendable {
+public enum VisionPipelineStage: String, Codable, CaseIterable, Equatable, Sendable {
     case targetAcquisition
     case perspectiveNormalization
     case frameRegistration
