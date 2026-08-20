@@ -666,3 +666,721 @@ public enum FrameChangeDetectionValidationError: Error, Equatable {
     case incompatibleDimensions
     case invalidValidityMask
 }
+
+public enum TemporalConfidenceBand: String, Codable, Equatable, Sendable {
+    case low
+    case medium
+    case high
+}
+
+public enum TemporalCandidateState: String, Codable, Equatable, Sendable {
+    case observing
+    case persistentCandidate
+    case highConfidence
+    case mediumConfidence
+    case lowConfidence
+    case rejectedTransient
+    case rejectedUnstable
+    case suppressedKnownImpact
+}
+
+public enum TemporalSuppressionReason: String, Codable, Equatable, Sendable {
+    case knownImpactOverlap
+    case insufficientPersistence
+    case unstablePosition
+}
+
+public struct KnownImpact: Codable, Equatable, Sendable {
+    public let id: String
+    public let centroid: NormalizedImagePoint
+    public let radius: Double
+    public let firstConfirmedFrameSequenceIndex: Int
+    public let firstConfirmedTimestamp: TimeInterval
+
+    public init(
+        id: String,
+        centroid: NormalizedImagePoint,
+        radius: Double,
+        firstConfirmedFrameSequenceIndex: Int,
+        firstConfirmedTimestamp: TimeInterval
+    ) throws {
+        guard !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TemporalConfirmationValidationError.invalidIdentifier
+        }
+        guard radius > 0, radius.isFinite else {
+            throw TemporalConfirmationValidationError.invalidConfiguration
+        }
+
+        self.id = id
+        self.centroid = centroid
+        self.radius = radius
+        self.firstConfirmedFrameSequenceIndex = firstConfirmedFrameSequenceIndex
+        self.firstConfirmedTimestamp = firstConfirmedTimestamp
+    }
+}
+
+public struct TemporalConfirmationConfiguration: Codable, Equatable, Sendable {
+    public let minimumObservedFrames: Int
+    public let minimumConsecutiveObservations: Int
+    public let maximumAllowedMissingFrames: Int
+    public let maximumCentroidDrift: Double
+    public let minimumRegionOverlapRatio: Double
+    public let knownImpactSuppressionRadius: Double
+    public let highConfidenceThreshold: Double
+    public let mediumConfidenceThreshold: Double
+
+    public init(
+        minimumObservedFrames: Int = 3,
+        minimumConsecutiveObservations: Int = 2,
+        maximumAllowedMissingFrames: Int = 0,
+        maximumCentroidDrift: Double = 0.035,
+        minimumRegionOverlapRatio: Double = 0.2,
+        knownImpactSuppressionRadius: Double = 0.035,
+        highConfidenceThreshold: Double = 0.85,
+        mediumConfidenceThreshold: Double = 0.60
+    ) throws {
+        guard minimumObservedFrames > 0,
+              minimumConsecutiveObservations > 0,
+              maximumAllowedMissingFrames >= 0 else {
+            throw TemporalConfirmationValidationError.invalidConfiguration
+        }
+        guard maximumCentroidDrift > 0, maximumCentroidDrift.isFinite,
+              knownImpactSuppressionRadius > 0, knownImpactSuppressionRadius.isFinite,
+              (0...1).contains(minimumRegionOverlapRatio) else {
+            throw TemporalConfirmationValidationError.invalidConfiguration
+        }
+        guard 0 < mediumConfidenceThreshold,
+              mediumConfidenceThreshold < highConfidenceThreshold,
+              highConfidenceThreshold <= 1 else {
+            throw TemporalConfirmationValidationError.invalidConfiguration
+        }
+
+        self.minimumObservedFrames = minimumObservedFrames
+        self.minimumConsecutiveObservations = minimumConsecutiveObservations
+        self.maximumAllowedMissingFrames = maximumAllowedMissingFrames
+        self.maximumCentroidDrift = maximumCentroidDrift
+        self.minimumRegionOverlapRatio = minimumRegionOverlapRatio
+        self.knownImpactSuppressionRadius = knownImpactSuppressionRadius
+        self.highConfidenceThreshold = highConfidenceThreshold
+        self.mediumConfidenceThreshold = mediumConfidenceThreshold
+    }
+
+    public static let `default` = try! TemporalConfirmationConfiguration()
+}
+
+public struct TemporalImpactCandidate: Codable, Equatable, Sendable {
+    public let id: String
+    public let sourceCandidateID: String?
+    public let state: TemporalCandidateState
+    public let centroid: NormalizedImagePoint
+    public let bounds: NormalizedImageRegion
+    public let firstObservedFrameSequenceIndex: Int
+    public let lastObservedFrameSequenceIndex: Int
+    public let firstObservedTimestamp: TimeInterval
+    public let lastObservedTimestamp: TimeInterval
+    public let observedFrameCount: Int
+    public let consecutiveObservationCount: Int
+    public let missedFrameCount: Int
+    public let maximumCentroidDrift: Double
+    public let confidence: Double
+    public let confidenceBand: TemporalConfidenceBand
+    public let suppressionReason: TemporalSuppressionReason?
+
+    public init(
+        id: String,
+        sourceCandidateID: String?,
+        state: TemporalCandidateState,
+        centroid: NormalizedImagePoint,
+        bounds: NormalizedImageRegion,
+        firstObservedFrameSequenceIndex: Int,
+        lastObservedFrameSequenceIndex: Int,
+        firstObservedTimestamp: TimeInterval,
+        lastObservedTimestamp: TimeInterval,
+        observedFrameCount: Int,
+        consecutiveObservationCount: Int,
+        missedFrameCount: Int,
+        maximumCentroidDrift: Double,
+        confidence: Double,
+        confidenceBand: TemporalConfidenceBand,
+        suppressionReason: TemporalSuppressionReason? = nil
+    ) throws {
+        guard !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TemporalConfirmationValidationError.invalidIdentifier
+        }
+        guard observedFrameCount > 0,
+              consecutiveObservationCount >= 0,
+              missedFrameCount >= 0,
+              maximumCentroidDrift >= 0,
+              maximumCentroidDrift.isFinite,
+              (0...1).contains(confidence) else {
+            throw TemporalConfirmationValidationError.invalidMetric
+        }
+
+        self.id = id
+        self.sourceCandidateID = sourceCandidateID
+        self.state = state
+        self.centroid = centroid
+        self.bounds = bounds
+        self.firstObservedFrameSequenceIndex = firstObservedFrameSequenceIndex
+        self.lastObservedFrameSequenceIndex = lastObservedFrameSequenceIndex
+        self.firstObservedTimestamp = firstObservedTimestamp
+        self.lastObservedTimestamp = lastObservedTimestamp
+        self.observedFrameCount = observedFrameCount
+        self.consecutiveObservationCount = consecutiveObservationCount
+        self.missedFrameCount = missedFrameCount
+        self.maximumCentroidDrift = maximumCentroidDrift
+        self.confidence = confidence
+        self.confidenceBand = confidenceBand
+        self.suppressionReason = suppressionReason
+    }
+}
+
+public struct TemporalConfirmationResult: Codable, Equatable, Sendable {
+    public let frameSequenceIndex: Int
+    public let frameTimestamp: TimeInterval
+    public let rawCandidateCount: Int
+    public let emittedCandidates: [TemporalImpactCandidate]
+    public let activeTrackCount: Int
+    public let knownImpactCount: Int
+    public let skippedFrame: Bool
+
+    public var highConfidenceCandidates: [TemporalImpactCandidate] {
+        emittedCandidates.filter { $0.confidenceBand == .high && $0.state == .highConfidence }
+    }
+}
+
+public struct TemporalImpactConfirmer: Sendable {
+    public let configuration: TemporalConfirmationConfiguration
+    private var tracks: [TemporalCandidateTrack] = []
+    private var knownImpacts: [KnownImpact]
+    private var nextTrackNumber = 1
+
+    public init(
+        configuration: TemporalConfirmationConfiguration = .default,
+        knownImpacts: [KnownImpact] = []
+    ) {
+        self.configuration = configuration
+        self.knownImpacts = knownImpacts
+    }
+
+    public var currentKnownImpacts: [KnownImpact] {
+        knownImpacts
+    }
+
+    public mutating func process(_ changeResult: ChangeDetectionResult) throws -> TemporalConfirmationResult {
+        let rawCandidates = changeResult.candidates
+        guard changeResult.status == .localizedChangeDetected else {
+            let emitted = try ageTracks(
+                frameSequenceIndex: changeResult.frameSequenceIndex,
+                frameTimestamp: changeResult.frameTimestamp,
+                validNoChangeFrame: changeResult.status == .noChange
+            )
+            return TemporalConfirmationResult(
+                frameSequenceIndex: changeResult.frameSequenceIndex,
+                frameTimestamp: changeResult.frameTimestamp,
+                rawCandidateCount: rawCandidates.count,
+                emittedCandidates: emitted,
+                activeTrackCount: tracks.count,
+                knownImpactCount: knownImpacts.count,
+                skippedFrame: changeResult.status != .noChange
+            )
+        }
+
+        var matchedTrackIDs = Set<String>()
+        var emitted: [TemporalImpactCandidate] = []
+
+        for candidate in rawCandidates {
+            if let knownImpact = knownImpact(overlapping: candidate) {
+                emitted.append(try suppressedCandidate(from: candidate, knownImpact: knownImpact))
+                continue
+            }
+
+            if let trackIndex = bestTrackIndex(for: candidate, excluding: matchedTrackIDs) {
+                tracks[trackIndex].observe(candidate)
+                matchedTrackIDs.insert(tracks[trackIndex].id)
+                let temporalCandidate = try outputCandidate(for: tracks[trackIndex], sourceCandidateID: candidate.id)
+                emitted.append(temporalCandidate)
+
+                if temporalCandidate.state == .highConfidence {
+                    knownImpacts.append(try KnownImpact(
+                        id: temporalCandidate.id,
+                        centroid: temporalCandidate.centroid,
+                        radius: configuration.knownImpactSuppressionRadius,
+                        firstConfirmedFrameSequenceIndex: temporalCandidate.lastObservedFrameSequenceIndex,
+                        firstConfirmedTimestamp: temporalCandidate.lastObservedTimestamp
+                    ))
+                    tracks[trackIndex].hasEmittedHighConfidence = true
+                    tracks[trackIndex].isFinal = true
+                }
+            } else {
+                let track = TemporalCandidateTrack(id: "temporal-\(nextTrackNumber)", firstCandidate: candidate)
+                nextTrackNumber += 1
+                tracks.append(track)
+                matchedTrackIDs.insert(track.id)
+                emitted.append(try outputCandidate(for: track, sourceCandidateID: candidate.id))
+            }
+        }
+
+        emitted.append(contentsOf: try ageUnmatchedTracks(
+            matchedTrackIDs: matchedTrackIDs,
+            frameSequenceIndex: changeResult.frameSequenceIndex,
+            frameTimestamp: changeResult.frameTimestamp
+        ))
+
+        tracks.removeAll { $0.isFinal }
+
+        return TemporalConfirmationResult(
+            frameSequenceIndex: changeResult.frameSequenceIndex,
+            frameTimestamp: changeResult.frameTimestamp,
+            rawCandidateCount: rawCandidates.count,
+            emittedCandidates: emitted,
+            activeTrackCount: tracks.count,
+            knownImpactCount: knownImpacts.count,
+            skippedFrame: false
+        )
+    }
+
+    private func bestTrackIndex(for candidate: ChangeCandidate, excluding matchedTrackIDs: Set<String>) -> Int? {
+        var best: (index: Int, distance: Double)?
+
+        for index in tracks.indices where !tracks[index].isFinal && !matchedTrackIDs.contains(tracks[index].id) {
+            let distance = normalizedDistance(candidate.centroid, tracks[index].centroid)
+            let overlap = overlapRatio(candidate.bounds, tracks[index].bounds)
+            guard distance <= configuration.maximumCentroidDrift ||
+                  overlap >= configuration.minimumRegionOverlapRatio else {
+                continue
+            }
+
+            if best == nil || distance < best!.distance {
+                best = (index, distance)
+            }
+        }
+
+        return best?.index
+    }
+
+    private func knownImpact(overlapping candidate: ChangeCandidate) -> KnownImpact? {
+        knownImpacts.first { knownImpact in
+            normalizedDistance(candidate.centroid, knownImpact.centroid) <= knownImpact.radius
+        }
+    }
+
+    private mutating func ageTracks(
+        frameSequenceIndex: Int,
+        frameTimestamp: TimeInterval,
+        validNoChangeFrame: Bool
+    ) throws -> [TemporalImpactCandidate] {
+        var emitted: [TemporalImpactCandidate] = []
+
+        for index in tracks.indices where !tracks[index].isFinal {
+            tracks[index].missedFrameCount += 1
+            tracks[index].consecutiveObservationCount = 0
+
+            if validNoChangeFrame && tracks[index].missedFrameCount > configuration.maximumAllowedMissingFrames {
+                tracks[index].isFinal = true
+                emitted.append(try outputCandidate(
+                    for: tracks[index],
+                    sourceCandidateID: nil,
+                    forcedState: .rejectedTransient,
+                    forcedReason: .insufficientPersistence,
+                    frameSequenceIndex: frameSequenceIndex,
+                    frameTimestamp: frameTimestamp
+                ))
+            }
+        }
+
+        tracks.removeAll { $0.isFinal }
+        return emitted
+    }
+
+    private mutating func ageUnmatchedTracks(
+        matchedTrackIDs: Set<String>,
+        frameSequenceIndex: Int,
+        frameTimestamp: TimeInterval
+    ) throws -> [TemporalImpactCandidate] {
+        var emitted: [TemporalImpactCandidate] = []
+
+        for index in tracks.indices where !matchedTrackIDs.contains(tracks[index].id) && !tracks[index].isFinal {
+            tracks[index].missedFrameCount += 1
+            tracks[index].consecutiveObservationCount = 0
+
+            if tracks[index].missedFrameCount > configuration.maximumAllowedMissingFrames {
+                tracks[index].isFinal = true
+                emitted.append(try outputCandidate(
+                    for: tracks[index],
+                    sourceCandidateID: nil,
+                    forcedState: .rejectedTransient,
+                    forcedReason: .insufficientPersistence,
+                    frameSequenceIndex: frameSequenceIndex,
+                    frameTimestamp: frameTimestamp
+                ))
+            }
+        }
+
+        return emitted
+    }
+
+    private func outputCandidate(
+        for track: TemporalCandidateTrack,
+        sourceCandidateID: String?,
+        forcedState: TemporalCandidateState? = nil,
+        forcedReason: TemporalSuppressionReason? = nil,
+        frameSequenceIndex: Int? = nil,
+        frameTimestamp: TimeInterval? = nil
+    ) throws -> TemporalImpactCandidate {
+        let confidence = forcedState == nil ? confidence(for: track) : min(confidence(for: track), 0.59)
+        let band = confidenceBand(for: confidence)
+        let state = forcedState ?? state(for: track, confidence: confidence, band: band)
+
+        return try TemporalImpactCandidate(
+            id: track.id,
+            sourceCandidateID: sourceCandidateID,
+            state: state,
+            centroid: track.centroid,
+            bounds: track.bounds,
+            firstObservedFrameSequenceIndex: track.firstObservedFrameSequenceIndex,
+            lastObservedFrameSequenceIndex: frameSequenceIndex ?? track.lastObservedFrameSequenceIndex,
+            firstObservedTimestamp: track.firstObservedTimestamp,
+            lastObservedTimestamp: frameTimestamp ?? track.lastObservedTimestamp,
+            observedFrameCount: track.observedFrameCount,
+            consecutiveObservationCount: track.consecutiveObservationCount,
+            missedFrameCount: track.missedFrameCount,
+            maximumCentroidDrift: track.maximumCentroidDrift,
+            confidence: confidence,
+            confidenceBand: band,
+            suppressionReason: forcedReason
+        )
+    }
+
+    private func suppressedCandidate(from candidate: ChangeCandidate, knownImpact: KnownImpact) throws -> TemporalImpactCandidate {
+        try TemporalImpactCandidate(
+            id: "suppressed-\(candidate.id)",
+            sourceCandidateID: candidate.id,
+            state: .suppressedKnownImpact,
+            centroid: candidate.centroid,
+            bounds: candidate.bounds,
+            firstObservedFrameSequenceIndex: candidate.frameSequenceIndex,
+            lastObservedFrameSequenceIndex: candidate.frameSequenceIndex,
+            firstObservedTimestamp: candidate.frameTimestamp,
+            lastObservedTimestamp: candidate.frameTimestamp,
+            observedFrameCount: 1,
+            consecutiveObservationCount: 1,
+            missedFrameCount: 0,
+            maximumCentroidDrift: normalizedDistance(candidate.centroid, knownImpact.centroid),
+            confidence: 0,
+            confidenceBand: .low,
+            suppressionReason: .knownImpactOverlap
+        )
+    }
+
+    private func state(
+        for track: TemporalCandidateTrack,
+        confidence: Double,
+        band: TemporalConfidenceBand
+    ) -> TemporalCandidateState {
+        guard track.observedFrameCount >= configuration.minimumObservedFrames,
+              track.consecutiveObservationCount >= configuration.minimumConsecutiveObservations else {
+            return band == .medium ? .mediumConfidence : .lowConfidence
+        }
+
+        guard track.maximumCentroidDrift <= configuration.maximumCentroidDrift else {
+            return .rejectedUnstable
+        }
+
+        switch band {
+        case .high:
+            return track.hasEmittedHighConfidence ? .persistentCandidate : .highConfidence
+        case .medium:
+            return .mediumConfidence
+        case .low:
+            return .lowConfidence
+        }
+    }
+
+    private func confidence(for track: TemporalCandidateTrack) -> Double {
+        let persistence = min(1, Double(track.observedFrameCount) / Double(configuration.minimumObservedFrames))
+        let stability = max(0, 1 - track.maximumCentroidDrift / configuration.maximumCentroidDrift)
+        let visualMagnitude = min(1, track.averageMagnitude / 0.6)
+        let visualContrast = min(1, track.averageContrast / 0.6)
+        let visualQuality = (visualMagnitude + visualContrast) / 2
+        let registrationQuality = min(1, max(0, track.averageRegistrationConfidence))
+        var confidence = 0.35 * persistence + 0.25 * stability + 0.25 * visualQuality + 0.15 * registrationQuality
+
+        if track.observedFrameCount == 1 {
+            confidence = min(confidence, 0.59)
+        } else if track.observedFrameCount < configuration.minimumObservedFrames {
+            confidence = min(confidence, configuration.highConfidenceThreshold - 0.01)
+        }
+
+        return min(1, max(0, confidence))
+    }
+
+    private func confidenceBand(for confidence: Double) -> TemporalConfidenceBand {
+        if confidence >= configuration.highConfidenceThreshold {
+            return .high
+        }
+
+        if confidence >= configuration.mediumConfidenceThreshold {
+            return .medium
+        }
+
+        return .low
+    }
+}
+
+private struct TemporalCandidateTrack: Sendable {
+    let id: String
+    var centroid: NormalizedImagePoint
+    var bounds: NormalizedImageRegion
+    let firstObservedFrameSequenceIndex: Int
+    var lastObservedFrameSequenceIndex: Int
+    let firstObservedTimestamp: TimeInterval
+    var lastObservedTimestamp: TimeInterval
+    var observedFrameCount: Int
+    var consecutiveObservationCount: Int
+    var missedFrameCount: Int
+    var maximumCentroidDrift: Double
+    var magnitudeSum: Double
+    var contrastSum: Double
+    var registrationConfidenceSum: Double
+    var hasEmittedHighConfidence = false
+    var isFinal = false
+
+    init(id: String, firstCandidate: ChangeCandidate) {
+        self.id = id
+        self.centroid = firstCandidate.centroid
+        self.bounds = firstCandidate.bounds
+        self.firstObservedFrameSequenceIndex = firstCandidate.frameSequenceIndex
+        self.lastObservedFrameSequenceIndex = firstCandidate.frameSequenceIndex
+        self.firstObservedTimestamp = firstCandidate.frameTimestamp
+        self.lastObservedTimestamp = firstCandidate.frameTimestamp
+        self.observedFrameCount = 1
+        self.consecutiveObservationCount = 1
+        self.missedFrameCount = 0
+        self.maximumCentroidDrift = 0
+        self.magnitudeSum = firstCandidate.magnitude
+        self.contrastSum = firstCandidate.contrast
+        self.registrationConfidenceSum = firstCandidate.registrationConfidence
+    }
+
+    mutating func observe(_ candidate: ChangeCandidate) {
+        maximumCentroidDrift = max(maximumCentroidDrift, normalizedDistance(candidate.centroid, centroid))
+        let nextCount = Double(observedFrameCount + 1)
+        if let averagedCentroid = try? NormalizedImagePoint(
+            x: (centroid.x * Double(observedFrameCount) + candidate.centroid.x) / nextCount,
+            y: (centroid.y * Double(observedFrameCount) + candidate.centroid.y) / nextCount
+        ) {
+            centroid = averagedCentroid
+        }
+        bounds = candidate.bounds
+        lastObservedFrameSequenceIndex = candidate.frameSequenceIndex
+        lastObservedTimestamp = candidate.frameTimestamp
+        observedFrameCount += 1
+        consecutiveObservationCount += 1
+        missedFrameCount = 0
+        magnitudeSum += candidate.magnitude
+        contrastSum += candidate.contrast
+        registrationConfidenceSum += candidate.registrationConfidence
+    }
+
+    var averageMagnitude: Double {
+        magnitudeSum / Double(observedFrameCount)
+    }
+
+    var averageContrast: Double {
+        contrastSum / Double(observedFrameCount)
+    }
+
+    var averageRegistrationConfidence: Double {
+        registrationConfidenceSum / Double(observedFrameCount)
+    }
+}
+
+public struct TemporalConfirmationProcessor: VisionFrameProcessor {
+    private let registrationConfiguration: FrameRegistrationConfiguration
+    private let changeDetector: FrameChangeDetector
+    private let registrationEngine: FrameRegistrationEngine
+    private var temporalConfirmer: TemporalImpactConfirmer
+    private var referenceFrame: VisionFrame?
+    private var registrationReference: RegistrationReferenceFrame?
+
+    public init(
+        registrationConfiguration: FrameRegistrationConfiguration = .default,
+        changeDetectionConfiguration: ChangeDetectionConfiguration = .default,
+        temporalConfirmationConfiguration: TemporalConfirmationConfiguration = .default,
+        knownImpacts: [KnownImpact] = []
+    ) {
+        self.registrationConfiguration = registrationConfiguration
+        self.changeDetector = FrameChangeDetector(configuration: changeDetectionConfiguration)
+        self.registrationEngine = FrameRegistrationEngine(configuration: registrationConfiguration)
+        self.temporalConfirmer = TemporalImpactConfirmer(
+            configuration: temporalConfirmationConfiguration,
+            knownImpacts: knownImpacts
+        )
+    }
+
+    public mutating func process(_ frame: VisionFrame) async throws -> [VisionPipelineEvent] {
+        guard let referenceFrame, let registrationReference else {
+            do {
+                let registrationReference = try RegistrationReferenceFrame(
+                    frame: frame,
+                    minimumFeatureCount: registrationConfiguration.minimumFeatureCount
+                )
+                self.referenceFrame = frame
+                self.registrationReference = registrationReference
+                let changeResult = ChangeDetectionResult(
+                    status: .noChange,
+                    frameSequenceIndex: frame.sequenceIndex,
+                    frameTimestamp: frame.timestamp,
+                    changedPixelRatio: 0,
+                    maximumMagnitude: 0,
+                    validComparisonPixelRatio: 1,
+                    candidates: [],
+                    registrationStatus: .referenceReady
+                )
+                let temporalResult = try temporalConfirmer.process(changeResult)
+
+                return [
+                    changeEvent(frame: frame, result: changeResult),
+                    temporalEvent(frame: frame, result: temporalResult)
+                ]
+            } catch {
+                let changeResult = ChangeDetectionResult(
+                    status: .invalidFrame,
+                    frameSequenceIndex: frame.sequenceIndex,
+                    frameTimestamp: frame.timestamp,
+                    changedPixelRatio: 0,
+                    maximumMagnitude: 0,
+                    validComparisonPixelRatio: 0,
+                    candidates: [],
+                    registrationStatus: .invalidFrame
+                )
+                let temporalResult = try temporalConfirmer.process(changeResult)
+
+                return [
+                    changeEvent(frame: frame, result: changeResult),
+                    temporalEvent(frame: frame, result: temporalResult)
+                ]
+            }
+        }
+
+        let registration = try registrationEngine.register(currentFrame: frame, against: registrationReference)
+        let changeResult = try changeDetector.detectChanges(
+            referenceFrame: referenceFrame,
+            currentFrame: frame,
+            registration: registration
+        )
+        let temporalResult = try temporalConfirmer.process(changeResult)
+
+        return [
+            VisionPipelineEvent(
+                frameSequenceIndex: frame.sequenceIndex,
+                frameTimestamp: frame.timestamp,
+                stage: .frameRegistration,
+                diagnostics: try FrameRegistrationDiagnostics.diagnostics(for: registration)
+            ),
+            changeEvent(frame: frame, result: changeResult),
+            temporalEvent(frame: frame, result: temporalResult)
+        ]
+    }
+
+    private func changeEvent(frame: VisionFrame, result: ChangeDetectionResult) -> VisionPipelineEvent {
+        VisionPipelineEvent(
+            frameSequenceIndex: frame.sequenceIndex,
+            frameTimestamp: frame.timestamp,
+            stage: .changeMapGeneration,
+            diagnostics: ChangeDetectionDiagnostics.diagnostics(for: result)
+        )
+    }
+
+    private func temporalEvent(frame: VisionFrame, result: TemporalConfirmationResult) -> VisionPipelineEvent {
+        VisionPipelineEvent(
+            frameSequenceIndex: frame.sequenceIndex,
+            frameTimestamp: frame.timestamp,
+            stage: .temporalConfirmation,
+            diagnostics: TemporalConfirmationDiagnostics.diagnostics(for: result)
+        )
+    }
+}
+
+public enum TemporalConfirmationDiagnostics {
+    public static func diagnostics(for result: TemporalConfirmationResult) -> [VisionFrameDiagnostic] {
+        var diagnostics: [VisionFrameDiagnostic] = []
+        append("temporalRawCandidateCount", Double(result.rawCandidateCount), to: &diagnostics)
+        append("temporalEmittedCandidateCount", Double(result.emittedCandidates.count), to: &diagnostics)
+        append("temporalActiveTrackCount", Double(result.activeTrackCount), to: &diagnostics)
+        append("temporalKnownImpactCount", Double(result.knownImpactCount), to: &diagnostics)
+        append("temporalSkippedFrame", result.skippedFrame ? 1 : 0, to: &diagnostics)
+        append("temporalHighConfidenceCount", Double(result.emittedCandidates.filter { $0.state == .highConfidence }.count), to: &diagnostics)
+        append("temporalMediumConfidenceCount", Double(result.emittedCandidates.filter { $0.confidenceBand == .medium }.count), to: &diagnostics)
+        append("temporalLowConfidenceCount", Double(result.emittedCandidates.filter { $0.confidenceBand == .low }.count), to: &diagnostics)
+        append("temporalSuppressedKnownImpactCount", Double(result.emittedCandidates.filter { $0.state == .suppressedKnownImpact }.count), to: &diagnostics)
+        append("temporalRejectedTransientCount", Double(result.emittedCandidates.filter { $0.state == .rejectedTransient }.count), to: &diagnostics)
+
+        if let first = result.emittedCandidates.first {
+            append("temporalFirstConfidence", first.confidence, to: &diagnostics)
+            append("temporalFirstConfidenceBand", bandCode(first.confidenceBand), to: &diagnostics)
+            append("temporalFirstState", stateCode(first.state), to: &diagnostics)
+            append("temporalFirstCentroidX", first.centroid.x, to: &diagnostics)
+            append("temporalFirstCentroidY", first.centroid.y, to: &diagnostics)
+            append("temporalFirstObservedFrames", Double(first.observedFrameCount), to: &diagnostics)
+        }
+
+        return diagnostics
+    }
+
+    private static func append(_ key: String, _ value: Double, to diagnostics: inout [VisionFrameDiagnostic]) {
+        if let diagnostic = try? VisionFrameDiagnostic(key: key, value: value) {
+            diagnostics.append(diagnostic)
+        }
+    }
+
+    private static func bandCode(_ band: TemporalConfidenceBand) -> Double {
+        switch band {
+        case .low: return 1
+        case .medium: return 2
+        case .high: return 3
+        }
+    }
+
+    private static func stateCode(_ state: TemporalCandidateState) -> Double {
+        switch state {
+        case .observing: return 1
+        case .persistentCandidate: return 2
+        case .highConfidence: return 3
+        case .mediumConfidence: return 4
+        case .lowConfidence: return 5
+        case .rejectedTransient: return 6
+        case .rejectedUnstable: return 7
+        case .suppressedKnownImpact: return 8
+        }
+    }
+}
+
+public enum TemporalConfirmationValidationError: Error, Equatable {
+    case invalidConfiguration
+    case invalidIdentifier
+    case invalidMetric
+}
+
+private func normalizedDistance(_ lhs: NormalizedImagePoint, _ rhs: NormalizedImagePoint) -> Double {
+    hypot(lhs.x - rhs.x, lhs.y - rhs.y)
+}
+
+private func overlapRatio(_ lhs: NormalizedImageRegion, _ rhs: NormalizedImageRegion) -> Double {
+    let minX = max(lhs.minX, rhs.minX)
+    let minY = max(lhs.minY, rhs.minY)
+    let maxX = min(lhs.maxX, rhs.maxX)
+    let maxY = min(lhs.maxY, rhs.maxY)
+    guard maxX > minX, maxY > minY else {
+        return 0
+    }
+
+    let intersection = (maxX - minX) * (maxY - minY)
+    let smallerArea = min(lhs.width * lhs.height, rhs.width * rhs.height)
+    guard smallerArea > 0 else {
+        return 0
+    }
+
+    return intersection / smallerArea
+}

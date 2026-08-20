@@ -189,6 +189,129 @@ final class FrameChangeDetectionTests: XCTestCase {
         XCTAssertLessThan(result.maximumMagnitude, 0.18)
     }
 
+    func testPersistentCandidateReachesHighConfidenceOnce() throws {
+        var confirmer = TemporalImpactConfirmer()
+        _ = try confirmer.process(temporalChangeResult(frame: 0, candidates: []))
+        _ = try confirmer.process(temporalChangeResult(frame: 1, candidates: [temporalCandidate(frame: 1, x: 0.45, y: 0.5)]))
+        _ = try confirmer.process(temporalChangeResult(frame: 2, candidates: [temporalCandidate(frame: 2, x: 0.452, y: 0.501)]))
+        let result = try confirmer.process(temporalChangeResult(frame: 3, candidates: [temporalCandidate(frame: 3, x: 0.451, y: 0.499)]))
+
+        XCTAssertEqual(result.highConfidenceCandidates.count, 1)
+        XCTAssertEqual(result.emittedCandidates.filter { $0.state == .highConfidence }.count, 1)
+        XCTAssertEqual(result.knownImpactCount, 1)
+        XCTAssertEqual(result.highConfidenceCandidates.first?.observedFrameCount, 3)
+    }
+
+    func testTransientCandidateIsRejectedWithoutHighConfidence() throws {
+        var confirmer = TemporalImpactConfirmer()
+        let first = try confirmer.process(temporalChangeResult(frame: 1, candidates: [temporalCandidate(frame: 1, x: 0.45, y: 0.5)]))
+        let second = try confirmer.process(temporalNoChangeResult(frame: 2))
+        let third = try confirmer.process(temporalNoChangeResult(frame: 3))
+
+        XCTAssertEqual(first.emittedCandidates.first?.confidenceBand, .low)
+        XCTAssertTrue(second.emittedCandidates.contains { $0.state == .rejectedTransient })
+        XCTAssertTrue(third.highConfidenceCandidates.isEmpty)
+    }
+
+    func testMovingCandidateDoesNotBecomeOneStableImpact() throws {
+        var confirmer = TemporalImpactConfirmer()
+        let first = try confirmer.process(temporalChangeResult(frame: 1, candidates: [temporalCandidate(frame: 1, x: 0.35, y: 0.5)]))
+        let second = try confirmer.process(temporalChangeResult(frame: 2, candidates: [temporalCandidate(frame: 2, x: 0.45, y: 0.5)]))
+        let third = try confirmer.process(temporalChangeResult(frame: 3, candidates: [temporalCandidate(frame: 3, x: 0.55, y: 0.5)]))
+
+        let highCount = [first, second, third].flatMap(\.highConfidenceCandidates).count
+        XCTAssertEqual(highCount, 0)
+        XCTAssertEqual(third.knownImpactCount, 0)
+    }
+
+    func testKnownImpactSuppressesRediscoveredCandidate() throws {
+        let known = try KnownImpact(
+            id: "known-1",
+            centroid: try NormalizedImagePoint(x: 0.45, y: 0.5),
+            radius: 0.035,
+            firstConfirmedFrameSequenceIndex: 10,
+            firstConfirmedTimestamp: 0.4
+        )
+        var confirmer = TemporalImpactConfirmer(knownImpacts: [known])
+        let result = try confirmer.process(temporalChangeResult(frame: 11, candidates: [temporalCandidate(frame: 11, x: 0.452, y: 0.501)]))
+
+        XCTAssertEqual(result.emittedCandidates.count, 1)
+        XCTAssertEqual(result.emittedCandidates.first?.state, .suppressedKnownImpact)
+        XCTAssertEqual(result.emittedCandidates.first?.suppressionReason, .knownImpactOverlap)
+        XCTAssertEqual(result.highConfidenceCandidates, [])
+    }
+
+    func testNearbyNewImpactOutsideSuppressionRadiusRemainsEligible() throws {
+        let known = try KnownImpact(
+            id: "known-1",
+            centroid: try NormalizedImagePoint(x: 0.45, y: 0.5),
+            radius: 0.035,
+            firstConfirmedFrameSequenceIndex: 10,
+            firstConfirmedTimestamp: 0.4
+        )
+        var confirmer = TemporalImpactConfirmer(knownImpacts: [known])
+        _ = try confirmer.process(temporalChangeResult(frame: 11, candidates: [temporalCandidate(frame: 11, x: 0.50, y: 0.5)]))
+        _ = try confirmer.process(temporalChangeResult(frame: 12, candidates: [temporalCandidate(frame: 12, x: 0.501, y: 0.5)]))
+        let result = try confirmer.process(temporalChangeResult(frame: 13, candidates: [temporalCandidate(frame: 13, x: 0.499, y: 0.5)]))
+
+        XCTAssertEqual(result.highConfidenceCandidates.count, 1)
+        XCTAssertEqual(result.highConfidenceCandidates.first?.state, .highConfidence)
+        XCTAssertEqual(result.knownImpactCount, 2)
+    }
+
+    func testConfidenceBandsProgressWithPersistenceAndQuality() throws {
+        var confirmer = TemporalImpactConfirmer()
+        let low = try confirmer.process(temporalChangeResult(frame: 1, candidates: [temporalCandidate(frame: 1, x: 0.45, y: 0.5)]))
+        let medium = try confirmer.process(temporalChangeResult(frame: 2, candidates: [temporalCandidate(frame: 2, x: 0.451, y: 0.5)]))
+        let high = try confirmer.process(temporalChangeResult(frame: 3, candidates: [temporalCandidate(frame: 3, x: 0.45, y: 0.501)]))
+
+        XCTAssertEqual(low.emittedCandidates.first?.confidenceBand, .low)
+        XCTAssertEqual(medium.emittedCandidates.first?.confidenceBand, .medium)
+        XCTAssertEqual(high.emittedCandidates.first?.confidenceBand, .high)
+    }
+
+    func testWeakerAcceptedRegistrationLowersTemporalConfidence() throws {
+        var strongConfirmer = TemporalImpactConfirmer()
+        _ = try strongConfirmer.process(temporalChangeResult(frame: 1, candidates: [temporalCandidate(frame: 1, x: 0.45, y: 0.5, registrationConfidence: 1)]))
+        _ = try strongConfirmer.process(temporalChangeResult(frame: 2, candidates: [temporalCandidate(frame: 2, x: 0.451, y: 0.5, registrationConfidence: 1)]))
+        let strong = try strongConfirmer.process(temporalChangeResult(frame: 3, candidates: [temporalCandidate(frame: 3, x: 0.45, y: 0.501, registrationConfidence: 1)]))
+
+        var weakerConfirmer = TemporalImpactConfirmer()
+        _ = try weakerConfirmer.process(temporalChangeResult(frame: 1, candidates: [temporalCandidate(frame: 1, x: 0.45, y: 0.5, registrationConfidence: 0.65)]))
+        _ = try weakerConfirmer.process(temporalChangeResult(frame: 2, candidates: [temporalCandidate(frame: 2, x: 0.451, y: 0.5, registrationConfidence: 0.65)]))
+        let weaker = try weakerConfirmer.process(temporalChangeResult(frame: 3, candidates: [temporalCandidate(frame: 3, x: 0.45, y: 0.501, registrationConfidence: 0.65)]))
+
+        let strongConfidence = try XCTUnwrap(strong.highConfidenceCandidates.first?.confidence)
+        let weakerConfidence = try XCTUnwrap(weaker.highConfidenceCandidates.first?.confidence)
+        XCTAssertLessThan(weakerConfidence, strongConfidence)
+    }
+
+    func testReplayHarnessExercisesTemporalConfirmationProcessor() async throws {
+        let frames = [
+            try structuredFrame(index: 0, timestamp: 0, pixels: structuredPixels(), features: features()),
+            try structuredFrame(index: 1, timestamp: 0.04, pixels: structuredPixelsWithImpact(), features: features()),
+            try structuredFrame(index: 2, timestamp: 0.08, pixels: structuredPixelsWithImpact(), features: features()),
+            try structuredFrame(index: 3, timestamp: 0.12, pixels: structuredPixelsWithImpact(), features: features())
+        ]
+
+        let result = try await ReplayHarness.run(
+            manifest: try ReplayManifest(id: "temporal-confirmation-fixture"),
+            configuration: try ReplayRunConfiguration(algorithmVersion: "temporal-confirmation-slice-11"),
+            frameSource: try ArrayReplayFrameSource(frames: frames),
+            processor: TemporalConfirmationProcessor()
+        )
+
+        XCTAssertEqual(result.completionReason, .endOfStream)
+        let finalStages = result.frameResults[3].events.map(\.stage)
+        XCTAssertEqual(finalStages, [.frameRegistration, .changeMapGeneration, .temporalConfirmation])
+
+        let temporalDiagnostics = try XCTUnwrap(result.frameResults[3].events.last?.diagnostics)
+        let expectedHigh = try VisionFrameDiagnostic(key: "temporalHighConfidenceCount", value: 1)
+        let expectedKnown = try VisionFrameDiagnostic(key: "temporalKnownImpactCount", value: 1)
+        XCTAssertTrue(temporalDiagnostics.contains(expectedHigh))
+        XCTAssertTrue(temporalDiagnostics.contains(expectedKnown))
+    }
+
     func testReplayHarnessExercisesRegisteredChangeDetectionProcessor() async throws {
         let frames = [
             try frame(index: 0, timestamp: 0, pixels: basePixels(), features: features()),
@@ -293,6 +416,16 @@ final class FrameChangeDetectionTests: XCTestCase {
 
         for x in 6...13 {
             pixels[10 * structuredWidth + x] = 0.72
+        }
+
+        return pixels
+    }
+
+    private func structuredPixelsWithImpact() -> [Double] {
+        var pixels = structuredPixels()
+
+        for coordinate in [(x: 8, y: 9), (x: 9, y: 9), (x: 8, y: 10), (x: 9, y: 10)] {
+            pixels[coordinate.y * structuredWidth + coordinate.x] = 0.05
         }
 
         return pixels
@@ -438,5 +571,49 @@ final class FrameChangeDetectionTests: XCTestCase {
         let bottom = frame.luminanceAt(x: x0, y: y1) * (1 - tx) + frame.luminanceAt(x: x1, y: y1) * tx
 
         return top * (1 - ty) + bottom * ty
+    }
+
+    private func temporalChangeResult(frame: Int, candidates: [ChangeCandidate]) throws -> ChangeDetectionResult {
+        ChangeDetectionResult(
+            status: candidates.isEmpty ? .noChange : .localizedChangeDetected,
+            frameSequenceIndex: frame,
+            frameTimestamp: Double(frame) * 0.04,
+            changedPixelRatio: candidates.isEmpty ? 0 : 0.01,
+            maximumMagnitude: candidates.map(\.magnitude).max() ?? 0,
+            validComparisonPixelRatio: 1,
+            candidates: candidates,
+            registrationStatus: .registered
+        )
+    }
+
+    private func temporalNoChangeResult(frame: Int) throws -> ChangeDetectionResult {
+        try temporalChangeResult(frame: frame, candidates: [])
+    }
+
+    private func temporalCandidate(
+        frame: Int,
+        x: Double,
+        y: Double,
+        magnitude: Double = 0.72,
+        contrast: Double = 0.72,
+        registrationConfidence: Double = 1
+    ) throws -> ChangeCandidate {
+        let halfSize = 0.01
+        return try ChangeCandidate(
+            id: "candidate-\(frame)-\(x)-\(y)",
+            frameSequenceIndex: frame,
+            frameTimestamp: Double(frame) * 0.04,
+            bounds: try NormalizedImageRegion(
+                minX: max(0, x - halfSize),
+                minY: max(0, y - halfSize),
+                maxX: min(1, x + halfSize),
+                maxY: min(1, y + halfSize)
+            ),
+            centroid: try NormalizedImagePoint(x: x, y: y),
+            areaPixels: 4,
+            magnitude: magnitude,
+            contrast: contrast,
+            registrationConfidence: registrationConfidence
+        )
     }
 }
