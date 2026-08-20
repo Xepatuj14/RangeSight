@@ -112,7 +112,7 @@ final class FrameChangeDetectionTests: XCTestCase {
             index: 1,
             timestamp: 0.04,
             pixels: shiftedStructuredPixels(dx: 5, dy: 0),
-            features: translatedFeatures(dx: 0.25, dy: 0)
+            features: translatedFeatures(dx: 0.2, dy: 0)
         )
         let referenceRegistration = try RegistrationReferenceFrame(frame: reference, minimumFeatureCount: 3)
         let registration = try FrameRegistrationEngine().register(currentFrame: current, against: referenceRegistration)
