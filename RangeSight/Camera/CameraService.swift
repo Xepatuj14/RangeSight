@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 
 public enum CameraAuthorizationState: Equatable, Sendable {
     case notDetermined
@@ -9,6 +9,7 @@ public enum CameraAuthorizationState: Equatable, Sendable {
 
 public protocol CameraService: Sendable {
     func authorizationState() async -> CameraAuthorizationState
+    func requestAuthorization() async -> CameraAuthorizationState
 }
 
 public struct AVCaptureCameraService: CameraService {
@@ -27,5 +28,15 @@ public struct AVCaptureCameraService: CameraService {
         @unknown default:
             return .restricted
         }
+    }
+
+    public func requestAuthorization() async -> CameraAuthorizationState {
+        let granted = await AVCaptureDevice.requestAccess(for: .video)
+
+        if granted {
+            return .authorized
+        }
+
+        return await authorizationState()
     }
 }

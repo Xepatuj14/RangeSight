@@ -159,11 +159,11 @@ struct SessionShellView: View {
 
     private var cameraSetupView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TargetPreviewView(shots: [], status: data.qualityStatus, showsCandidate: false)
+            CameraPreviewSurface()
             section("Framing") {
-                row(title: "Target size", value: "Good")
-                row(title: "Exposure", value: "Stable")
-                row(title: "Blur", value: "Low")
+                row(title: "Preview", value: "Native AVFoundation")
+                row(title: "Target lock", value: "Slice 7")
+                row(title: "Detection", value: "Not running")
             }
             primaryAction("Lock Target", systemImage: "lock.fill", destination: .liveMonitor)
         }

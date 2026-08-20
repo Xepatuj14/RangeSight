@@ -14,6 +14,6 @@ These project documents remain the product and slice-order authority for RangeSi
 
 ## Active Slice
 
-Slice 5: Persistence.
+Slice 6: Native camera preview.
 
-Deliverable: Local storage boundary, schema-versioned store, and create/read/update flows for sessions, strings, shots, target definitions, and firearm profiles. Slice 6 has not started.
+Deliverable: Swift/AVFoundation permission handling, camera preview lifecycle, and SwiftUI preview surface. Slice 7 has not started.
