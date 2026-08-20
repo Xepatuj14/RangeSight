@@ -40,6 +40,9 @@
 		2A000001000000000000001F /* CameraPreviewSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000101F /* CameraPreviewSurface.swift */; };
 		2A0000010000000000000020 /* CameraServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001020 /* CameraServiceTests.swift */; };
 		2A0000010000000000000021 /* CameraBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001021 /* CameraBoundary.swift */; };
+		2A0000010000000000000022 /* TargetLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001022 /* TargetLock.swift */; };
+		2A0000010000000000000023 /* TargetLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001023 /* TargetLockTests.swift */; };
+		2A0000010000000000000024 /* TargetLockPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001024 /* TargetLockPanel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +107,9 @@
 		2A000001000000000000101F /* CameraPreviewSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewSurface.swift; sourceTree = "<group>"; };
 		2A0000010000000000001020 /* CameraServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraServiceTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000001021 /* CameraBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraBoundary.swift; sourceTree = "<group>"; };
+		2A0000010000000000001022 /* TargetLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetLock.swift; sourceTree = "<group>"; };
+		2A0000010000000000001023 /* TargetLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetLockTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001024 /* TargetLockPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetLockPanel.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -212,6 +218,7 @@
 			isa = PBXGroup;
 			children = (
 				2A0000010000000000001008 /* VisionPipeline.swift */,
+				2A0000010000000000001022 /* TargetLock.swift */,
 			);
 			path = Vision;
 			sourceTree = "<group>";
@@ -270,6 +277,7 @@
 				2A0000010000000000001017 /* ScoringEngineTests.swift */,
 				2A000001000000000000101D /* PersistenceTests.swift */,
 				2A0000010000000000001020 /* CameraServiceTests.swift */,
+				2A0000010000000000001023 /* TargetLockTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -299,6 +307,7 @@
 				2A0000010000000000001019 /* TargetPreviewView.swift */,
 				2A000001000000000000101A /* SessionShellView.swift */,
 				2A000001000000000000101F /* CameraPreviewSurface.swift */,
+				2A0000010000000000001024 /* TargetLockPanel.swift */,
 			);
 			path = SessionUX;
 			sourceTree = "<group>";
@@ -410,6 +419,7 @@
 				2A0000010000000000000019 /* TargetPreviewView.swift in Sources */,
 				2A000001000000000000001A /* SessionShellView.swift in Sources */,
 				2A000001000000000000001F /* CameraPreviewSurface.swift in Sources */,
+				2A0000010000000000000024 /* TargetLockPanel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -425,6 +435,7 @@
 				2A0000010000000000000007 /* CameraService.swift in Sources */,
 				2A000001000000000000001E /* CameraPreviewSession.swift in Sources */,
 				2A0000010000000000000008 /* VisionPipeline.swift in Sources */,
+				2A0000010000000000000022 /* TargetLock.swift in Sources */,
 				2A0000010000000000000009 /* AudioBoundary.swift in Sources */,
 				2A000001000000000000000A /* ScoringBoundary.swift in Sources */,
 				2A0000010000000000000014 /* GeometryEngine.swift in Sources */,
@@ -448,6 +459,7 @@
 				2A0000010000000000000017 /* ScoringEngineTests.swift in Sources */,
 				2A000001000000000000001D /* PersistenceTests.swift in Sources */,
 				2A0000010000000000000020 /* CameraServiceTests.swift in Sources */,
+				2A0000010000000000000023 /* TargetLockTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

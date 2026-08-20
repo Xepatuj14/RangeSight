@@ -3,10 +3,15 @@ import RangeSightCore
 
 struct SessionShellView: View {
     @State private var selectedScreen: AppScreenID = .home
+    @State private var targetLockSource: TargetLockSource = .assisted
     private let data = MockRangeSessionData.sample
 
     private var screen: AppScreen {
         AppNavigation.screen(for: selectedScreen)
+    }
+
+    private var targetLockAssessment: TargetLockAssessment {
+        TargetLockPreviewData.assessment(source: targetLockSource)
     }
 
     var body: some View {
@@ -160,12 +165,27 @@ struct SessionShellView: View {
     private var cameraSetupView: some View {
         VStack(alignment: .leading, spacing: 14) {
             CameraPreviewSurface()
+            TargetLockPanel(
+                source: targetLockSource,
+                assessment: targetLockAssessment,
+                onSourceSelected: { targetLockSource = $0 }
+            )
             section("Framing") {
                 row(title: "Preview", value: "Native AVFoundation")
-                row(title: "Target lock", value: "Slice 7")
+                row(title: "Target lock", value: targetLockAssessment.canLock ? "Ready" : "Quality blocked")
+                row(title: "Normalization", value: "Perspective metadata")
                 row(title: "Detection", value: "Not running")
             }
-            primaryAction("Lock Target", systemImage: "lock.fill", destination: .liveMonitor)
+            Button {
+                selectedScreen = .liveMonitor
+            } label: {
+                Label("Lock Target", systemImage: "lock.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
+            .disabled(!targetLockAssessment.canLock)
         }
     }
 
@@ -282,11 +302,13 @@ struct SessionShellView: View {
     }
 }
 
-private enum Theme {
+enum Theme {
     static let background = Color(.sRGB, red: 0.06, green: 0.07, blue: 0.08, opacity: 1)
     static let panel = Color(.sRGB, red: 0.10, green: 0.12, blue: 0.14, opacity: 1)
     static let text = Color(.sRGB, red: 0.94, green: 0.96, blue: 0.97, opacity: 1)
     static let muted = Color(.sRGB, red: 0.58, green: 0.63, blue: 0.68, opacity: 1)
     static let accent = Color(.sRGB, red: 0.96, green: 0.77, blue: 0.26, opacity: 1)
     static let success = Color(.sRGB, red: 0.48, green: 0.86, blue: 0.58, opacity: 1)
+    static let warning = Color(.sRGB, red: 1.0, green: 0.42, blue: 0.36, opacity: 1)
+    static let control = Color(.sRGB, red: 0.24, green: 0.29, blue: 0.32, opacity: 1)
 }
