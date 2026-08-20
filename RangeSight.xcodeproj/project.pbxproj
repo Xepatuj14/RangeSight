@@ -266,6 +266,7 @@
 				2A0000010000000000001016 /* ScoringGeometryTests.swift */,
 				2A0000010000000000001017 /* ScoringEngineTests.swift */,
 				2A000001000000000000101D /* PersistenceTests.swift */,
+				2A0000010000000000001020 /* CameraServiceTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
