@@ -14,6 +14,6 @@ These project documents remain the product and slice-order authority for RangeSi
 
 ## Active Slice
 
-Slice 3: Scoring/geometry engine.
+Slice 4: Session UX shell.
 
-Deliverable: Physical coordinate conversion, group metrics, scoring-zone interfaces, score evaluation, and deterministic tests. Slice 4 has not started.
+Deliverable: Native Home, setup, live-monitor mock, review, summary/history, firearm profile, and settings screens using fake data. Slice 5 has not started.

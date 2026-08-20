@@ -30,6 +30,9 @@
 		2A0000010000000000000015 /* ScoringEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001015 /* ScoringEngine.swift */; };
 		2A0000010000000000000016 /* ScoringGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001016 /* ScoringGeometryTests.swift */; };
 		2A0000010000000000000017 /* ScoringEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001017 /* ScoringEngineTests.swift */; };
+		2A0000010000000000000018 /* SessionMockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001018 /* SessionMockData.swift */; };
+		2A0000010000000000000019 /* TargetPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001019 /* TargetPreviewView.swift */; };
+		2A000001000000000000001A /* SessionShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000101A /* SessionShellView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +87,9 @@
 		2A0000010000000000001015 /* ScoringEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringEngine.swift; sourceTree = "<group>"; };
 		2A0000010000000000001016 /* ScoringGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringGeometryTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000001017 /* ScoringEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringEngineTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001018 /* SessionMockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionMockData.swift; sourceTree = "<group>"; };
+		2A0000010000000000001019 /* TargetPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetPreviewView.swift; sourceTree = "<group>"; };
+		2A000001000000000000101A /* SessionShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionShellView.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -129,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				2A0000010000000000007003 /* App */,
+				2A0000010000000000007012 /* Features */,
 				2A0000010000000000007004 /* Shared */,
 				2A0000010000000000007005 /* Domain */,
 				2A0000010000000000007006 /* SessionEngine */,
@@ -257,6 +264,24 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		2A0000010000000000007012 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000007013 /* SessionUX */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007013 /* SessionUX */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001018 /* SessionMockData.swift */,
+				2A0000010000000000001019 /* TargetPreviewView.swift */,
+				2A000001000000000000101A /* SessionShellView.swift */,
+			);
+			path = SessionUX;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -360,6 +385,9 @@
 			files = (
 				2A0000010000000000000001 /* RangeSightApp.swift in Sources */,
 				2A0000010000000000000002 /* RootView.swift in Sources */,
+				2A0000010000000000000018 /* SessionMockData.swift in Sources */,
+				2A0000010000000000000019 /* TargetPreviewView.swift in Sources */,
+				2A000001000000000000001A /* SessionShellView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
