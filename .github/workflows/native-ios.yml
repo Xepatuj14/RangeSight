@@ -1,0 +1,45 @@
+name: Native iOS Validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  native-ios:
+    name: Xcode iOS Build and Tests
+    runs-on: macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Inspect Xcode
+        run: |
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Resolve Xcode project dependencies
+        run: xcodebuild -resolvePackageDependencies -project RangeSight.xcodeproj -scheme RangeSight
+
+      - name: Build app for iOS Simulator
+        run: |
+          xcodebuild build \
+            -project RangeSight.xcodeproj \
+            -scheme RangeSight \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run unit tests on iOS Simulator
+        shell: bash
+        run: |
+          DESTINATION="$(xcrun simctl list devices available iOS | awk -F '[()]' '/iPhone/ { print "platform=iOS Simulator,id="$2; exit }')"
+          test -n "$DESTINATION"
+          xcodebuild test \
+            -project RangeSight.xcodeproj \
+            -scheme RangeSight \
+            -destination "$DESTINATION" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run supplementary Swift package tests
+        run: swift test

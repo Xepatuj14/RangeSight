@@ -1,0 +1,675 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2A0000010000000000000001 /* RangeSightApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001001 /* RangeSightApp.swift */; };
+		2A0000010000000000000002 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001002 /* RootView.swift */; };
+		2A0000010000000000000003 /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001003 /* AppNavigation.swift */; };
+		2A0000010000000000000004 /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001004 /* DomainModels.swift */; };
+		2A0000010000000000000005 /* Serialization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001005 /* Serialization.swift */; };
+		2A0000010000000000000006 /* SessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001006 /* SessionState.swift */; };
+		2A0000010000000000000007 /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001007 /* CameraService.swift */; };
+		2A0000010000000000000008 /* VisionPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001008 /* VisionPipeline.swift */; };
+		2A0000010000000000000009 /* AudioBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001009 /* AudioBoundary.swift */; };
+		2A000001000000000000000A /* ScoringBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000100A /* ScoringBoundary.swift */; };
+		2A000001000000000000000B /* PersistenceBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000100B /* PersistenceBoundary.swift */; };
+		2A000001000000000000000C /* AnalyticsBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000100C /* AnalyticsBoundary.swift */; };
+		2A000001000000000000000D /* ReplayBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000100D /* ReplayBoundary.swift */; };
+		2A000001000000000000000E /* NavigationStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000100E /* NavigationStateTests.swift */; };
+		2A000001000000000000000F /* DomainModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000100F /* DomainModelsTests.swift */; };
+		2A0000010000000000000010 /* SessionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001010 /* SessionStateTests.swift */; };
+		2A0000010000000000000011 /* RangeSightCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000002002 /* RangeSightCore.framework */; };
+		2A0000010000000000000012 /* RangeSightCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000002002 /* RangeSightCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		2A0000010000000000000013 /* RangeSightCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000002002 /* RangeSightCore.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2A0000010000000000003001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2A0000010000000000005001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2A0000010000000000004002;
+			remoteInfo = RangeSightCore;
+		};
+		2A0000010000000000003002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2A0000010000000000005001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2A0000010000000000004002;
+			remoteInfo = RangeSightCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2A0000010000000000006001 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				2A0000010000000000000012 /* RangeSightCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2A0000010000000000001001 /* RangeSightApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeSightApp.swift; sourceTree = "<group>"; };
+		2A0000010000000000001002 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		2A0000010000000000001003 /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
+		2A0000010000000000001004 /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModels.swift; sourceTree = "<group>"; };
+		2A0000010000000000001005 /* Serialization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Serialization.swift; sourceTree = "<group>"; };
+		2A0000010000000000001006 /* SessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionState.swift; sourceTree = "<group>"; };
+		2A0000010000000000001007 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
+		2A0000010000000000001008 /* VisionPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionPipeline.swift; sourceTree = "<group>"; };
+		2A0000010000000000001009 /* AudioBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBoundary.swift; sourceTree = "<group>"; };
+		2A000001000000000000100A /* ScoringBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringBoundary.swift; sourceTree = "<group>"; };
+		2A000001000000000000100B /* PersistenceBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceBoundary.swift; sourceTree = "<group>"; };
+		2A000001000000000000100C /* AnalyticsBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsBoundary.swift; sourceTree = "<group>"; };
+		2A000001000000000000100D /* ReplayBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayBoundary.swift; sourceTree = "<group>"; };
+		2A000001000000000000100E /* NavigationStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationStateTests.swift; sourceTree = "<group>"; };
+		2A000001000000000000100F /* DomainModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModelsTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001010 /* SessionStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStateTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2A0000010000000000006101 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A0000010000000000000011 /* RangeSightCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A0000010000000000006102 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A0000010000000000006103 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A0000010000000000000013 /* RangeSightCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2A0000010000000000007001 = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000007002 /* RangeSight */,
+				2A0000010000000000007010 /* RangeSightTests */,
+				2A0000010000000000007011 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007002 /* RangeSight */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000007003 /* App */,
+				2A0000010000000000007004 /* Shared */,
+				2A0000010000000000007005 /* Domain */,
+				2A0000010000000000007006 /* SessionEngine */,
+				2A0000010000000000007007 /* Camera */,
+				2A0000010000000000007008 /* Vision */,
+				2A0000010000000000007009 /* Audio */,
+				2A000001000000000000700A /* Scoring */,
+				2A000001000000000000700B /* Persistence */,
+				2A000001000000000000700C /* Analytics */,
+				2A000001000000000000700D /* Replay */,
+			);
+			path = RangeSight;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001001 /* RangeSightApp.swift */,
+				2A0000010000000000001002 /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007004 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001003 /* AppNavigation.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007005 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001004 /* DomainModels.swift */,
+				2A0000010000000000001005 /* Serialization.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007006 /* SessionEngine */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001006 /* SessionState.swift */,
+			);
+			path = SessionEngine;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007007 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001007 /* CameraService.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007008 /* Vision */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001008 /* VisionPipeline.swift */,
+			);
+			path = Vision;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007009 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001009 /* AudioBoundary.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		2A000001000000000000700A /* Scoring */ = {
+			isa = PBXGroup;
+			children = (
+				2A000001000000000000100A /* ScoringBoundary.swift */,
+			);
+			path = Scoring;
+			sourceTree = "<group>";
+		};
+		2A000001000000000000700B /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				2A000001000000000000100B /* PersistenceBoundary.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		2A000001000000000000700C /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				2A000001000000000000100C /* AnalyticsBoundary.swift */,
+			);
+			path = Analytics;
+			sourceTree = "<group>";
+		};
+		2A000001000000000000700D /* Replay */ = {
+			isa = PBXGroup;
+			children = (
+				2A000001000000000000100D /* ReplayBoundary.swift */,
+			);
+			path = Replay;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007010 /* RangeSightTests */ = {
+			isa = PBXGroup;
+			children = (
+				2A000001000000000000100E /* NavigationStateTests.swift */,
+				2A000001000000000000100F /* DomainModelsTests.swift */,
+				2A0000010000000000001010 /* SessionStateTests.swift */,
+			);
+			path = RangeSightTests;
+			sourceTree = "<group>";
+		};
+		2A0000010000000000007011 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000002001 /* RangeSight.app */,
+				2A0000010000000000002002 /* RangeSightCore.framework */,
+				2A0000010000000000002003 /* RangeSightTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2A0000010000000000004001 /* RangeSight */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A0000010000000000008001 /* Build configuration list for PBXNativeTarget "RangeSight" */;
+			buildPhases = (
+				2A0000010000000000006201 /* Sources */,
+				2A0000010000000000006101 /* Frameworks */,
+				2A0000010000000000006001 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2A0000010000000000009001 /* PBXTargetDependency */,
+			);
+			name = RangeSight;
+			productName = RangeSight;
+			productReference = 2A0000010000000000002001 /* RangeSight.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2A0000010000000000004002 /* RangeSightCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A0000010000000000008002 /* Build configuration list for PBXNativeTarget "RangeSightCore" */;
+			buildPhases = (
+				2A0000010000000000006202 /* Sources */,
+				2A0000010000000000006102 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RangeSightCore;
+			productName = RangeSightCore;
+			productReference = 2A0000010000000000002002 /* RangeSightCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		2A0000010000000000004003 /* RangeSightTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A0000010000000000008003 /* Build configuration list for PBXNativeTarget "RangeSightTests" */;
+			buildPhases = (
+				2A0000010000000000006203 /* Sources */,
+				2A0000010000000000006103 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2A0000010000000000009002 /* PBXTargetDependency */,
+			);
+			name = RangeSightTests;
+			productName = RangeSightTests;
+			productReference = 2A0000010000000000002003 /* RangeSightTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2A0000010000000000005001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					2A0000010000000000004001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					2A0000010000000000004002 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					2A0000010000000000004003 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 2A0000010000000000004001;
+					};
+				};
+			};
+			buildConfigurationList = 2A0000010000000000008000 /* Build configuration list for PBXProject "RangeSight" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 2A0000010000000000007001;
+			productRefGroup = 2A0000010000000000007011 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2A0000010000000000004001 /* RangeSight */,
+				2A0000010000000000004002 /* RangeSightCore */,
+				2A0000010000000000004003 /* RangeSightTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2A0000010000000000006201 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A0000010000000000000001 /* RangeSightApp.swift in Sources */,
+				2A0000010000000000000002 /* RootView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A0000010000000000006202 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A0000010000000000000003 /* AppNavigation.swift in Sources */,
+				2A0000010000000000000004 /* DomainModels.swift in Sources */,
+				2A0000010000000000000005 /* Serialization.swift in Sources */,
+				2A0000010000000000000006 /* SessionState.swift in Sources */,
+				2A0000010000000000000007 /* CameraService.swift in Sources */,
+				2A0000010000000000000008 /* VisionPipeline.swift in Sources */,
+				2A0000010000000000000009 /* AudioBoundary.swift in Sources */,
+				2A000001000000000000000A /* ScoringBoundary.swift in Sources */,
+				2A000001000000000000000B /* PersistenceBoundary.swift in Sources */,
+				2A000001000000000000000C /* AnalyticsBoundary.swift in Sources */,
+				2A000001000000000000000D /* ReplayBoundary.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A0000010000000000006203 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A000001000000000000000E /* NavigationStateTests.swift in Sources */,
+				2A000001000000000000000F /* DomainModelsTests.swift in Sources */,
+				2A0000010000000000000010 /* SessionStateTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2A0000010000000000009001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A0000010000000000004002 /* RangeSightCore */;
+			targetProxy = 2A0000010000000000003001 /* PBXContainerItemProxy */;
+		};
+		2A0000010000000000009002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A0000010000000000004002 /* RangeSightCore */;
+			targetProxy = 2A0000010000000000003002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2A000001000000000000A001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		2A000001000000000000A002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		2A000001000000000000A101 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "RangeSight uses the camera to monitor a paper target during an active range session.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "RangeSight may use audio impulses to narrow visual detection windows. Visual confirmation is still required.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rangesight.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		2A000001000000000000A102 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "RangeSight uses the camera to monitor a paper target during an active range session.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "RangeSight may use audio impulses to narrow visual detection windows. Visual confirmation is still required.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rangesight.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		2A000001000000000000A201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACH_O_TYPE = mh_dylib;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rangesight.core;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		2A000001000000000000A202 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACH_O_TYPE = mh_dylib;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rangesight.core;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		2A000001000000000000A301 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rangesight.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		2A000001000000000000A302 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rangesight.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2A0000010000000000008000 /* Build configuration list for PBXProject "RangeSight" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A000001000000000000A001 /* Debug */,
+				2A000001000000000000A002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2A0000010000000000008001 /* Build configuration list for PBXNativeTarget "RangeSight" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A000001000000000000A101 /* Debug */,
+				2A000001000000000000A102 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2A0000010000000000008002 /* Build configuration list for PBXNativeTarget "RangeSightCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A000001000000000000A201 /* Debug */,
+				2A000001000000000000A202 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2A0000010000000000008003 /* Build configuration list for PBXNativeTarget "RangeSightTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A000001000000000000A301 /* Debug */,
+				2A000001000000000000A302 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2A0000010000000000005001 /* Project object */;
+}
