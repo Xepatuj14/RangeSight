@@ -24,6 +24,7 @@ public enum FrameOrientation: String, Codable, CaseIterable, Equatable, Sendable
 public enum VisionFrameContent: Codable, Equatable, Sendable {
     case metadataOnly
     case fixtureData(String)
+    case fixtureFeatures([RegistrationFeature])
 }
 
 public struct VisionFrame: Codable, Equatable, Sendable {
