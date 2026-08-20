@@ -119,7 +119,7 @@ final class FrameRegistrationTests: XCTestCase {
     }
 
     func testExcessiveMotionIsRejectedWithoutPretendingSuccess() throws {
-        let result = try registrationResult(currentFeatures: translatedFeatures(dx: 0.3, dy: 0))
+        let result = try registrationResult(currentFeatures: translatedFeatures(dx: 0.2, dy: 0))
 
         XCTAssertEqual(result.status, .failed)
         XCTAssertEqual(result.rejectionReason, .excessiveMotion)
