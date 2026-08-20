@@ -43,6 +43,8 @@
 		2A0000010000000000000022 /* TargetLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001022 /* TargetLock.swift */; };
 		2A0000010000000000000023 /* TargetLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001023 /* TargetLockTests.swift */; };
 		2A0000010000000000000024 /* TargetLockPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001024 /* TargetLockPanel.swift */; };
+		2A0000010000000000000025 /* FrameSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001025 /* FrameSource.swift */; };
+		2A0000010000000000000026 /* ReplayHarnessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001026 /* ReplayHarnessTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +112,8 @@
 		2A0000010000000000001022 /* TargetLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetLock.swift; sourceTree = "<group>"; };
 		2A0000010000000000001023 /* TargetLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetLockTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000001024 /* TargetLockPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetLockPanel.swift; sourceTree = "<group>"; };
+		2A0000010000000000001025 /* FrameSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSource.swift; sourceTree = "<group>"; };
+		2A0000010000000000001026 /* ReplayHarnessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayHarnessTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -219,6 +223,7 @@
 			children = (
 				2A0000010000000000001008 /* VisionPipeline.swift */,
 				2A0000010000000000001022 /* TargetLock.swift */,
+				2A0000010000000000001025 /* FrameSource.swift */,
 			);
 			path = Vision;
 			sourceTree = "<group>";
@@ -278,6 +283,7 @@
 				2A000001000000000000101D /* PersistenceTests.swift */,
 				2A0000010000000000001020 /* CameraServiceTests.swift */,
 				2A0000010000000000001023 /* TargetLockTests.swift */,
+				2A0000010000000000001026 /* ReplayHarnessTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -436,6 +442,7 @@
 				2A000001000000000000001E /* CameraPreviewSession.swift in Sources */,
 				2A0000010000000000000008 /* VisionPipeline.swift in Sources */,
 				2A0000010000000000000022 /* TargetLock.swift in Sources */,
+				2A0000010000000000000025 /* FrameSource.swift in Sources */,
 				2A0000010000000000000009 /* AudioBoundary.swift in Sources */,
 				2A000001000000000000000A /* ScoringBoundary.swift in Sources */,
 				2A0000010000000000000014 /* GeometryEngine.swift in Sources */,
@@ -460,6 +467,7 @@
 				2A000001000000000000001D /* PersistenceTests.swift in Sources */,
 				2A0000010000000000000020 /* CameraServiceTests.swift in Sources */,
 				2A0000010000000000000023 /* TargetLockTests.swift in Sources */,
+				2A0000010000000000000026 /* ReplayHarnessTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
