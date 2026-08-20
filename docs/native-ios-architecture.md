@@ -60,8 +60,9 @@ Slices 1 and 2 were reimplemented natively:
 
 - Slice 1: SwiftUI app shell, native navigation model, Xcode project/scheme, Swift package/test baseline, CI workflow.
 - Slice 2: Swift domain models, normalized target coordinates, schema-versioned serialization, unit tests.
+- Slice 3: Native scoring/geometry engine for physical coordinate conversion, group metrics, scoring-zone interfaces, score evaluation, and deterministic tests.
 
-Slice 3 has not been implemented.
+Slice 4 has not been implemented.
 
 ## Package.swift Decision
 

@@ -14,6 +14,6 @@ These project documents remain the product and slice-order authority for RangeSi
 
 ## Active Slice
 
-Native migration after Slice 2.
+Slice 3: Scoring/geometry engine.
 
-Deliverable: Native SwiftUI foundation plus Swift domain models equivalent to Slices 1 and 2. The production app build path is `RangeSight.xcodeproj` with the shared `RangeSight` scheme and iOS 17.0 deployment target. Slice 3 has not started.
+Deliverable: Physical coordinate conversion, group metrics, scoring-zone interfaces, score evaluation, and deterministic tests. Slice 4 has not started.

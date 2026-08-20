@@ -135,6 +135,12 @@ public struct PhysicalPoint: Codable, Equatable, Sendable {
     public let x: Double
     public let y: Double
     public let unit: LengthUnit
+
+    public init(x: Double, y: Double, unit: LengthUnit) {
+        self.x = x
+        self.y = y
+        self.unit = unit
+    }
 }
 
 public struct PhysicalDimensions: Codable, Equatable, Sendable {
@@ -220,6 +226,12 @@ public struct ShotScore: Codable, Equatable, Sendable {
     public let value: Double
     public let targetDefinitionRevision: Int
     public let reviewable: Bool
+
+    public init(value: Double, targetDefinitionRevision: Int, reviewable: Bool) {
+        self.value = value
+        self.targetDefinitionRevision = targetDefinitionRevision
+        self.reviewable = reviewable
+    }
 }
 
 public struct Shot: Codable, Equatable, Sendable {

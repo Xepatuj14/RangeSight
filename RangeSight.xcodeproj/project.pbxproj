@@ -26,6 +26,10 @@
 		2A0000010000000000000011 /* RangeSightCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000002002 /* RangeSightCore.framework */; };
 		2A0000010000000000000012 /* RangeSightCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000002002 /* RangeSightCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2A0000010000000000000013 /* RangeSightCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000002002 /* RangeSightCore.framework */; };
+		2A0000010000000000000014 /* GeometryEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001014 /* GeometryEngine.swift */; };
+		2A0000010000000000000015 /* ScoringEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001015 /* ScoringEngine.swift */; };
+		2A0000010000000000000016 /* ScoringGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001016 /* ScoringGeometryTests.swift */; };
+		2A0000010000000000000017 /* ScoringEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001017 /* ScoringEngineTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +80,10 @@
 		2A000001000000000000100E /* NavigationStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationStateTests.swift; sourceTree = "<group>"; };
 		2A000001000000000000100F /* DomainModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModelsTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000001010 /* SessionStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStateTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001014 /* GeometryEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryEngine.swift; sourceTree = "<group>"; };
+		2A0000010000000000001015 /* ScoringEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringEngine.swift; sourceTree = "<group>"; };
+		2A0000010000000000001016 /* ScoringGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringGeometryTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001017 /* ScoringEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringEngineTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -197,6 +205,8 @@
 			isa = PBXGroup;
 			children = (
 				2A000001000000000000100A /* ScoringBoundary.swift */,
+				2A0000010000000000001014 /* GeometryEngine.swift */,
+				2A0000010000000000001015 /* ScoringEngine.swift */,
 			);
 			path = Scoring;
 			sourceTree = "<group>";
@@ -231,6 +241,8 @@
 				2A000001000000000000100E /* NavigationStateTests.swift */,
 				2A000001000000000000100F /* DomainModelsTests.swift */,
 				2A0000010000000000001010 /* SessionStateTests.swift */,
+				2A0000010000000000001016 /* ScoringGeometryTests.swift */,
+				2A0000010000000000001017 /* ScoringEngineTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -363,6 +375,8 @@
 				2A0000010000000000000008 /* VisionPipeline.swift in Sources */,
 				2A0000010000000000000009 /* AudioBoundary.swift in Sources */,
 				2A000001000000000000000A /* ScoringBoundary.swift in Sources */,
+				2A0000010000000000000014 /* GeometryEngine.swift in Sources */,
+				2A0000010000000000000015 /* ScoringEngine.swift in Sources */,
 				2A000001000000000000000B /* PersistenceBoundary.swift in Sources */,
 				2A000001000000000000000C /* AnalyticsBoundary.swift in Sources */,
 				2A000001000000000000000D /* ReplayBoundary.swift in Sources */,
@@ -376,6 +390,8 @@
 				2A000001000000000000000E /* NavigationStateTests.swift in Sources */,
 				2A000001000000000000000F /* DomainModelsTests.swift in Sources */,
 				2A0000010000000000000010 /* SessionStateTests.swift in Sources */,
+				2A0000010000000000000016 /* ScoringGeometryTests.swift in Sources */,
+				2A0000010000000000000017 /* ScoringEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
