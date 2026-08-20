@@ -448,7 +448,7 @@ public struct RegisteredChangeDetectionProcessor: VisionFrameProcessor {
                 frameSequenceIndex: frame.sequenceIndex,
                 frameTimestamp: frame.timestamp,
                 stage: .frameRegistration,
-                diagnostics: FrameRegistrationDiagnostics.diagnostics(for: registration)
+                diagnostics: try FrameRegistrationDiagnostics.diagnostics(for: registration)
             ),
             changeEvent(frame: frame, result: changeResult)
         ]
