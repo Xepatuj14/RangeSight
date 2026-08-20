@@ -1,19 +1,6 @@
 @preconcurrency import AVFoundation
 import Foundation
 
-public enum CameraSessionState: Equatable, Sendable {
-    case idle
-    case configuring
-    case running
-    case stopped
-    case failed(CameraSessionFailure)
-}
-
-public enum CameraSessionFailure: Error, Equatable, Sendable {
-    case cameraUnavailable
-    case cannotAddInput
-}
-
 public final class CameraPreviewSession: @unchecked Sendable {
     public let captureSession: AVCaptureSession
     private let sessionQueue: DispatchQueue

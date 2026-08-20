@@ -20,6 +20,8 @@ let package = Package(
             path: "RangeSight",
             exclude: [
                 "App",
+                "Camera/CameraPreviewSession.swift",
+                "Camera/CameraService.swift",
                 "Features",
                 "Resources"
             ]

@@ -1,17 +1,5 @@
 @preconcurrency import AVFoundation
 
-public enum CameraAuthorizationState: Equatable, Sendable {
-    case notDetermined
-    case authorized
-    case denied
-    case restricted
-}
-
-public protocol CameraService: Sendable {
-    func authorizationState() async -> CameraAuthorizationState
-    func requestAuthorization() async -> CameraAuthorizationState
-}
-
 public struct AVCaptureCameraService: CameraService {
     public init() {}
 
