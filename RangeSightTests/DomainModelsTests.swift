@@ -203,8 +203,12 @@ final class DomainModelsTests: XCTestCase {
 
     func testTargetDisplayGeometryMapsViewPointsToNormalizedCoordinates() throws {
         let geometry = try TargetDisplayGeometry(containerWidth: 300, containerHeight: 500, targetAspectRatio: 1)
+        let displayPoint = DisplayPoint(x: 150, y: 250)
 
-        let center = try XCTUnwrap(try geometry.normalizedCoordinate(at: DisplayPoint(x: 150, y: 250)))
+        XCTAssertEqual(displayPoint.x, 150)
+        XCTAssertEqual(displayPoint.y, 250)
+
+        let center = try XCTUnwrap(try geometry.normalizedCoordinate(at: displayPoint))
         let topLeft = try XCTUnwrap(try geometry.normalizedCoordinate(at: DisplayPoint(x: 0, y: 100)))
         let bottomRight = try XCTUnwrap(try geometry.normalizedCoordinate(at: DisplayPoint(x: 300, y: 400)))
         let outside = try geometry.normalizedCoordinate(at: DisplayPoint(x: 150, y: 50))
