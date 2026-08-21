@@ -10,4 +10,8 @@ public protocol RangeSightRepository: Sendable {
     func rangeStrings(sessionID: RangeSessionID) async throws -> [RangeString]
     func upsertShot(_ shot: Shot) async throws
     func shots(stringID: RangeStringID) async throws -> [Shot]
+    func replaceImpactCorrectionState(_ state: ImpactCorrectionState, stringID: RangeStringID) async throws
+    func replaceImpactCorrectionHistory(_ impacts: [AcceptedImpact], stringID: RangeStringID) async throws
+    func impactCorrectionHistory(stringID: RangeStringID) async throws -> [AcceptedImpact]
+    func impactCorrectionState(stringID: RangeStringID) async throws -> ImpactCorrectionState
 }

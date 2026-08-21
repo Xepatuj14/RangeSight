@@ -16,13 +16,11 @@ public actor LocalRangeSightRepository: RangeSightRepository {
 
         let data = try Data(contentsOf: storeURL)
         let store = try Self.makeDecoder().decode(PersistedRangeSightStore.self, from: data)
-        try validateSchema(store)
-        return store
+        return try migratedStore(from: store)
     }
 
     public func replaceStore(_ store: PersistedRangeSightStore) async throws {
-        try validateSchema(store)
-        try write(store)
+        try write(migratedStore(from: store))
     }
 
     public func upsertFirearmProfile(_ profile: FirearmProfile) async throws {
@@ -85,6 +83,48 @@ public actor LocalRangeSightRepository: RangeSightRepository {
             .sorted { $0.ordinal < $1.ordinal }
     }
 
+    public func replaceImpactCorrectionState(_ state: ImpactCorrectionState, stringID: RangeStringID) async throws {
+        let shots = try state.shotsForPersistence().filter { $0.stringID == stringID }
+        try await mutateStore { store in
+            guard store.rangeStrings.contains(where: { $0.id == stringID }) else {
+                throw PersistenceError.missingRangeString(stringID)
+            }
+
+            store.impactCorrectionHistory.removeAll { $0.stringID == stringID }
+            store.impactCorrectionHistory.append(contentsOf: state.impacts.filter { $0.stringID == stringID })
+            store.shots.removeAll { $0.stringID == stringID }
+            store.shots.append(contentsOf: shots)
+        }
+    }
+
+    public func replaceImpactCorrectionHistory(_ impacts: [AcceptedImpact], stringID: RangeStringID) async throws {
+        try await mutateStore { store in
+            guard store.rangeStrings.contains(where: { $0.id == stringID }) else {
+                throw PersistenceError.missingRangeString(stringID)
+            }
+
+            store.impactCorrectionHistory.removeAll { $0.stringID == stringID }
+            store.impactCorrectionHistory.append(contentsOf: impacts.filter { $0.stringID == stringID })
+        }
+    }
+
+    public func impactCorrectionHistory(stringID: RangeStringID) async throws -> [AcceptedImpact] {
+        let store = try await loadStore()
+        return store.impactCorrectionHistory
+            .filter { $0.stringID == stringID }
+            .sorted { lhs, rhs in
+                if lhs.createdAt == rhs.createdAt {
+                    return lhs.id.rawValue < rhs.id.rawValue
+                }
+
+                return lhs.createdAt < rhs.createdAt
+            }
+    }
+
+    public func impactCorrectionState(stringID: RangeStringID) async throws -> ImpactCorrectionState {
+        ImpactCorrectionState(impacts: try await impactCorrectionHistory(stringID: stringID))
+    }
+
     private func mutateStore(_ mutation: (inout PersistedRangeSightStore) throws -> Void) async throws {
         var store = try await loadStore()
         try mutation(&store)
@@ -92,17 +132,32 @@ public actor LocalRangeSightRepository: RangeSightRepository {
     }
 
     private func write(_ store: PersistedRangeSightStore) throws {
-        try validateSchema(store)
+        let store = try migratedStore(from: store)
         let directory = storeURL.deletingLastPathComponent()
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
         let data = try Self.makeEncoder().encode(store)
         try data.write(to: storeURL, options: [.atomic])
     }
 
-    private func validateSchema(_ store: PersistedRangeSightStore) throws {
-        guard store.schemaVersion == PersistenceSchema.currentVersion else {
+    private func migratedStore(from store: PersistedRangeSightStore) throws -> PersistedRangeSightStore {
+        guard (1...PersistenceSchema.currentVersion).contains(store.schemaVersion) else {
             throw PersistenceError.unsupportedSchemaVersion(store.schemaVersion)
         }
+
+        guard store.schemaVersion != PersistenceSchema.currentVersion else {
+            return store
+        }
+
+        return PersistedRangeSightStore(
+            firearmProfiles: store.firearmProfiles,
+            targetDefinitions: store.targetDefinitions,
+            rangeSessions: store.rangeSessions,
+            rangeStrings: store.rangeStrings,
+            shots: store.shots,
+            impactCorrectionHistory: store.impactCorrectionHistory,
+            detectionDiagnostics: store.detectionDiagnostics,
+            sessionAssets: store.sessionAssets
+        )
     }
 
     private static func makeEncoder() -> JSONEncoder {

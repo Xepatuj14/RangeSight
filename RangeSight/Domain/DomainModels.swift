@@ -396,11 +396,11 @@ public struct ImpactCorrectionState: Codable, Equatable, Sendable {
     public init(
         impacts: [AcceptedImpact] = [],
         unresolvedMediumCandidates: [RawImpactEvidence] = [],
-        counters: ImpactCorrectionCounters = ImpactCorrectionCounters()
+        counters: ImpactCorrectionCounters? = nil
     ) {
         self.impacts = impacts
         self.unresolvedMediumCandidates = unresolvedMediumCandidates
-        self.counters = counters
+        self.counters = counters ?? Self.counters(for: impacts)
         self.nextManualImpactNumber = impacts.count + 1
         recalculateOrdinals()
     }
@@ -443,7 +443,6 @@ public struct ImpactCorrectionState: Codable, Equatable, Sendable {
             displayOrdinal: acceptedImpacts.count + 1
         )
         impacts.append(impact)
-        counters.autoConfirmedCount += 1
         recalculateOrdinals()
         return impact
     }
@@ -470,7 +469,6 @@ public struct ImpactCorrectionState: Codable, Equatable, Sendable {
             displayOrdinal: acceptedImpacts.count + 1
         )
         impacts.append(impact)
-        counters.userAddedCount += 1
         recalculateOrdinals()
         return impact
     }
@@ -498,7 +496,6 @@ public struct ImpactCorrectionState: Codable, Equatable, Sendable {
             displayOrdinal: acceptedImpacts.count + 1
         )
         impacts.append(impact)
-        counters.userConfirmedCandidateCount += 1
         recalculateOrdinals()
         return impact
     }
@@ -527,7 +524,6 @@ public struct ImpactCorrectionState: Codable, Equatable, Sendable {
             displayOrdinal: current.displayOrdinal
         )
         impacts[index] = moved
-        counters.userMovedCount += 1
         recalculateOrdinals()
         return moved
     }
@@ -549,7 +545,6 @@ public struct ImpactCorrectionState: Codable, Equatable, Sendable {
             displayOrdinal: current.displayOrdinal
         )
         impacts[index] = deleted
-        counters.userDeletedCount += 1
         recalculateOrdinals()
         return deleted
     }
@@ -587,6 +582,24 @@ public struct ImpactCorrectionState: Codable, Equatable, Sendable {
                 ) {
                     impacts[index] = updated
                 }
+            }
+        }
+        counters = Self.counters(for: impacts)
+    }
+
+    public static func counters(for impacts: [AcceptedImpact]) -> ImpactCorrectionCounters {
+        impacts.reduce(into: ImpactCorrectionCounters()) { counters, impact in
+            switch impact.provenance {
+            case .detectorConfirmed:
+                counters.autoConfirmedCount += 1
+            case .userConfirmedCandidate:
+                counters.userConfirmedCandidateCount += 1
+            case .userAdded:
+                counters.userAddedCount += 1
+            case .userMoved:
+                counters.userMovedCount += 1
+            case .userDeleted:
+                counters.userDeletedCount += 1
             }
         }
     }
