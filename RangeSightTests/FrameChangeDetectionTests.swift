@@ -371,8 +371,11 @@ final class FrameChangeDetectionTests: XCTestCase {
 
         XCTAssertEqual(failure.status, .degraded)
         XCTAssertEqual(failure.newEvents, [])
+        XCTAssertEqual(failure.totalEventCount, 0)
+        XCTAssertEqual(recovered.status, .monitoring)
         XCTAssertEqual(recovered.newEvents.count, 1)
         XCTAssertEqual(session.orderedEvents.count, 1)
+        XCTAssertEqual(session.orderedEvents.first?.shotIndex, 1)
     }
 
     func testLiveImpactSessionIgnoresResultsAfterEndString() throws {

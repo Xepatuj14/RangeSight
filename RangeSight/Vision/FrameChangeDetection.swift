@@ -955,7 +955,7 @@ public struct LiveImpactSession: Sendable {
     }
 
     public mutating func process(_ temporalResult: TemporalConfirmationResult) throws -> LiveImpactFrameOutcome {
-        guard status == .monitoring else {
+        guard status == .monitoring || status == .degraded else {
             return LiveImpactFrameOutcome(
                 frameSequenceIndex: temporalResult.frameSequenceIndex,
                 timestamp: temporalResult.frameTimestamp,
