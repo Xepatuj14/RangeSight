@@ -3,7 +3,8 @@ import XCTest
 
 final class AudioAssistTests: XCTestCase {
     func testImpulseDetectorEmitsOneCandidateForSharpTransient() throws {
-        var detector = AudioImpulseDetector(configuration: testConfiguration())
+        let configuration = try testConfiguration()
+        var detector = AudioImpulseDetector(configuration: configuration)
         _ = try detector.process(window(timestamp: 0, samples: noiseSamples()))
 
         let candidates = try detector.process(window(timestamp: 0.04, samples: transientSamples()))
@@ -16,7 +17,8 @@ final class AudioAssistTests: XCTestCase {
     }
 
     func testImpulseDetectorIgnoresNoiseOnly() throws {
-        var detector = AudioImpulseDetector(configuration: testConfiguration())
+        let configuration = try testConfiguration()
+        var detector = AudioImpulseDetector(configuration: configuration)
 
         let first = try detector.process(window(timestamp: 0, samples: noiseSamples()))
         let second = try detector.process(window(timestamp: 0.04, samples: noiseSamples()))
@@ -26,7 +28,8 @@ final class AudioAssistTests: XCTestCase {
     }
 
     func testImpulseDetectorRefractorySuppressesEchoPeak() throws {
-        var detector = AudioImpulseDetector(configuration: testConfiguration(minimumEventSpacing: 0.2))
+        let configuration = try testConfiguration(minimumEventSpacing: 0.2)
+        var detector = AudioImpulseDetector(configuration: configuration)
         _ = try detector.process(window(timestamp: 0, samples: noiseSamples()))
 
         let first = try detector.process(window(timestamp: 0.04, samples: transientSamples()))
@@ -53,6 +56,38 @@ final class AudioAssistTests: XCTestCase {
         XCTAssertEqual(buffer.candidates.map(\.id), ["near", "strong", "late"])
         XCTAssertEqual(buffer.candidatesSupportingVisualEvent(at: 2).map(\.id), ["near", "strong"])
         XCTAssertEqual(buffer.strongestCandidateSupportingVisualEvent(at: 2)?.id, "strong")
+    }
+
+    func testAudioConfigurationRejectsInvalidValues() {
+        XCTAssertThrowsError(
+            try AudioAssistConfiguration(
+                sampleWindowDuration: 0,
+                impulsePeakThreshold: 0.7,
+                energyRiseThreshold: 4,
+                minimumEventSpacing: 0.18,
+                preEventBufferDuration: 0.2,
+                postEventVisualWindowDuration: 0.35,
+                baselineSmoothingFactor: 0.05,
+                maximumBufferedEventCount: 8
+            )
+        ) { error in
+            XCTAssertEqual(error as? AudioAssistValidationError, .invalidConfiguration)
+        }
+
+        XCTAssertThrowsError(
+            try AudioAssistConfiguration(
+                sampleWindowDuration: 0.02,
+                impulsePeakThreshold: 0.7,
+                energyRiseThreshold: 1,
+                minimumEventSpacing: 0.18,
+                preEventBufferDuration: 0.2,
+                postEventVisualWindowDuration: 0.35,
+                baselineSmoothingFactor: 0.05,
+                maximumBufferedEventCount: 8
+            )
+        ) { error in
+            XCTAssertEqual(error as? AudioAssistValidationError, .invalidConfiguration)
+        }
     }
 
     func testPermissionStatesDoNotCreateVisualRequirement() async throws {
