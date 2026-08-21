@@ -225,7 +225,7 @@ struct SessionShellView: View {
 
     private var cameraSetupView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            CameraPreviewSurface()
+            CameraPreviewSurface(targetLockAssessment: targetLockAssessment)
             TargetLockPanel(
                 source: targetLockSource,
                 assessment: targetLockAssessment,

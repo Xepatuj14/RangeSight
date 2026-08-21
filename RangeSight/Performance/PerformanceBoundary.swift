@@ -110,8 +110,13 @@ public enum TargetROIMapper {
     public static func pixelRegion(
         for quadrilateral: TargetQuadrilateral,
         sourceDimensions: FrameDimensions,
-        minimumDimensions: FrameDimensions
+        minimumDimensions: FrameDimensions,
+        normalizedMargin: Double = 0
     ) throws -> PixelRegion {
+        guard normalizedMargin >= 0, normalizedMargin.isFinite else {
+            throw PerformanceValidationError.invalidROI
+        }
+
         let xs = quadrilateral.corners.map(\.x)
         let ys = quadrilateral.corners.map(\.y)
         guard let minX = xs.min(),
@@ -127,10 +132,15 @@ public enum TargetROIMapper {
             throw PerformanceValidationError.invalidROI
         }
 
-        let pixelMinX = Int((minX * Double(sourceDimensions.width)).rounded(.down))
-        let pixelMinY = Int((minY * Double(sourceDimensions.height)).rounded(.down))
-        let pixelMaxX = Int((maxX * Double(sourceDimensions.width)).rounded(.up))
-        let pixelMaxY = Int((maxY * Double(sourceDimensions.height)).rounded(.up))
+        let paddedMinX = max(0, minX - normalizedMargin)
+        let paddedMinY = max(0, minY - normalizedMargin)
+        let paddedMaxX = min(1, maxX + normalizedMargin)
+        let paddedMaxY = min(1, maxY + normalizedMargin)
+
+        let pixelMinX = Int((paddedMinX * Double(sourceDimensions.width)).rounded(.down))
+        let pixelMinY = Int((paddedMinY * Double(sourceDimensions.height)).rounded(.down))
+        let pixelMaxX = Int((paddedMaxX * Double(sourceDimensions.width)).rounded(.up))
+        let pixelMaxY = Int((paddedMaxY * Double(sourceDimensions.height)).rounded(.up))
 
         guard pixelMinX >= 0,
               pixelMinY >= 0,
@@ -152,6 +162,21 @@ public enum TargetROIMapper {
         }
 
         return region
+    }
+
+    public static func sourcePoint(
+        fromROILocalPoint point: NormalizedImagePoint,
+        region: PixelRegion,
+        sourceDimensions: FrameDimensions
+    ) throws -> NormalizedImagePoint {
+        guard region.maxXExclusive <= sourceDimensions.width,
+              region.maxYExclusive <= sourceDimensions.height else {
+            throw PerformanceValidationError.invalidROI
+        }
+
+        let sourceX = (Double(region.x) + point.x * Double(region.width)) / Double(sourceDimensions.width)
+        let sourceY = (Double(region.y) + point.y * Double(region.height)) / Double(sourceDimensions.height)
+        return try NormalizedImagePoint(x: sourceX, y: sourceY)
     }
 }
 

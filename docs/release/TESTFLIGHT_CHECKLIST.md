@@ -36,6 +36,19 @@ Status values:
 - [ ] Candidate persistence verified
 - [ ] Known-impact suppression verified
 
+## Adjacent-Lane Isolation
+
+- [ ] Two targets visible at same distance
+- [ ] Lock user's target A
+- [ ] Change target B only -> no impact
+- [ ] Loud neighboring shot + no A change -> no impact
+- [ ] Loud neighboring shot + B change -> no impact
+- [ ] A change -> impact detected
+- [ ] A + B change -> only A detected
+- [ ] Small camera bump -> tracking survives
+- [ ] Large camera bump toward B -> target lost/re-lock
+- [ ] Re-lock same target -> old holes not rediscovered
+
 ## Session
 
 - [ ] Start/end verified

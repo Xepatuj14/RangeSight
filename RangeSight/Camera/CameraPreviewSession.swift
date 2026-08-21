@@ -352,7 +352,8 @@ public final class CameraPreviewSession: NSObject, AVCaptureVideoDataOutputSampl
         return try TargetROIMapper.pixelRegion(
             for: targetLockAssessment.quadrilateral,
             sourceDimensions: sourceDimensions,
-            minimumDimensions: performanceConfiguration.minimumROIDimensions
+            minimumDimensions: performanceConfiguration.minimumROIDimensions,
+            normalizedMargin: TargetIsolationConfiguration.default.normalizedROIMargin
         )
     }
 

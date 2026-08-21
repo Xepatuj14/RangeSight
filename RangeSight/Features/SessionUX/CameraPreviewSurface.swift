@@ -108,12 +108,23 @@ final class CameraPreviewModel: ObservableObject {
 
 struct CameraPreviewSurface: View {
     @StateObject private var model = CameraPreviewModel()
+    let targetLockAssessment: TargetLockAssessment?
+
+    init(targetLockAssessment: TargetLockAssessment? = nil) {
+        self.targetLockAssessment = targetLockAssessment
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
             PreviewLayerView(session: model.previewSession.captureSession)
                 .background(Color.black)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay {
+                    if let quadrilateral = targetLockAssessment?.quadrilateral {
+                        TargetLockOutline(quadrilateral: quadrilateral)
+                            .padding(1)
+                    }
+                }
                 .overlay(alignment: .topLeading) {
                     statusBadge
                         .padding(12)
@@ -144,7 +155,11 @@ struct CameraPreviewSurface: View {
         }
         .frame(minHeight: 360)
         .task {
+            model.previewSession.setTargetLockAssessment(targetLockAssessment)
             model.activate()
+        }
+        .onChange(of: targetLockAssessment) { _, assessment in
+            model.previewSession.setTargetLockAssessment(assessment)
         }
         .onDisappear {
             model.deactivate()
@@ -209,6 +224,32 @@ struct CameraPreviewSurface: View {
             return "exclamationmark.triangle.fill"
         default:
             return "camera"
+        }
+    }
+}
+
+private struct TargetLockOutline: View {
+    let quadrilateral: TargetQuadrilateral
+
+    var body: some View {
+        GeometryReader { proxy in
+            Path { path in
+                let points = quadrilateral.corners.map {
+                    CGPoint(x: $0.x * proxy.size.width, y: $0.y * proxy.size.height)
+                }
+                guard let first = points.first else {
+                    return
+                }
+
+                path.move(to: first)
+                for point in points.dropFirst() {
+                    path.addLine(to: point)
+                }
+                path.closeSubpath()
+            }
+            .stroke(.yellow, style: StrokeStyle(lineWidth: 3, dash: [8, 5]))
+            .shadow(color: .black.opacity(0.8), radius: 2)
+            .accessibilityHidden(true)
         }
     }
 }

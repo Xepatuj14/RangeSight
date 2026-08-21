@@ -61,6 +61,8 @@
 		2A0000010000000000000034 /* ProcessFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001034 /* ProcessFlowTests.swift */; };
 		2A0000010000000000000035 /* SessionSaveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001035 /* SessionSaveCoordinator.swift */; };
 		2A0000010000000000000036 /* SessionSaveCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001036 /* SessionSaveCoordinatorTests.swift */; };
+		2A0000010000000000000037 /* TargetIsolation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001037 /* TargetIsolation.swift */; };
+		2A0000010000000000000038 /* TargetIsolationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001038 /* TargetIsolationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -146,6 +148,8 @@
 		2A0000010000000000001034 /* ProcessFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessFlowTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000001035 /* SessionSaveCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSaveCoordinator.swift; sourceTree = "<group>"; };
 		2A0000010000000000001036 /* SessionSaveCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSaveCoordinatorTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001037 /* TargetIsolation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetIsolation.swift; sourceTree = "<group>"; };
+		2A0000010000000000001038 /* TargetIsolationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetIsolationTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -261,6 +265,7 @@
 				2A0000010000000000001025 /* FrameSource.swift */,
 				2A0000010000000000001027 /* FrameRegistration.swift */,
 				2A0000010000000000001029 /* FrameChangeDetection.swift */,
+				2A0000010000000000001037 /* TargetIsolation.swift */,
 			);
 			path = Vision;
 			sourceTree = "<group>";
@@ -356,6 +361,7 @@
 				2A0000010000000000001033 /* ReleaseHardeningTests.swift */,
 				2A0000010000000000001034 /* ProcessFlowTests.swift */,
 				2A0000010000000000001036 /* SessionSaveCoordinatorTests.swift */,
+				2A0000010000000000001038 /* TargetIsolationTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -517,6 +523,7 @@
 				2A0000010000000000000025 /* FrameSource.swift in Sources */,
 				2A0000010000000000000027 /* FrameRegistration.swift in Sources */,
 				2A0000010000000000000029 /* FrameChangeDetection.swift in Sources */,
+				2A0000010000000000000037 /* TargetIsolation.swift in Sources */,
 				2A0000010000000000000009 /* AudioBoundary.swift in Sources */,
 				2A000001000000000000002B /* AudioCaptureService.swift in Sources */,
 				2A000001000000000000000A /* ScoringBoundary.swift in Sources */,
@@ -556,6 +563,7 @@
 				2A0000010000000000000033 /* ReleaseHardeningTests.swift in Sources */,
 				2A0000010000000000000034 /* ProcessFlowTests.swift in Sources */,
 				2A0000010000000000000036 /* SessionSaveCoordinatorTests.swift in Sources */,
+				2A0000010000000000000038 /* TargetIsolationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
