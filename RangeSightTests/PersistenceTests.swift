@@ -335,6 +335,54 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(migrated.impactCorrectionHistory, [])
     }
 
+    func testRepositoryRejectsMalformedStoreWithoutFabricatingData() async throws {
+        let storeURL = temporaryStoreURL()
+        let directory = storeURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let malformedData = try XCTUnwrap("{ not-json".data(using: .utf8))
+        try malformedData.write(to: storeURL)
+        let repository = LocalRangeSightRepository(storeURL: storeURL)
+
+        do {
+            _ = try await repository.loadStore()
+            XCTFail("Expected malformed JSON to fail.")
+        } catch is DecodingError {
+            // Expected.
+        } catch {
+            XCTFail("Expected decoding error, got \(error).")
+        }
+    }
+
+    func testRepositoryRejectsFutureSchemaOnLoadWithoutDeletingStore() async throws {
+        let storeURL = temporaryStoreURL()
+        let directory = storeURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let futureJSON = """
+        {
+          "schemaVersion": \(PersistenceSchema.currentVersion + 1),
+          "firearmProfiles": [],
+          "targetDefinitions": [],
+          "rangeSessions": [],
+          "rangeStrings": [],
+          "shots": [],
+          "impactCorrectionHistory": [],
+          "detectionDiagnostics": [],
+          "sessionAssets": []
+        }
+        """
+        let futureData = try XCTUnwrap(futureJSON.data(using: .utf8))
+        try futureData.write(to: storeURL)
+        let repository = LocalRangeSightRepository(storeURL: storeURL)
+
+        do {
+            _ = try await repository.loadStore()
+            XCTFail("Expected future schema to fail.")
+        } catch PersistenceError.unsupportedSchemaVersion(let version) {
+            XCTAssertEqual(version, PersistenceSchema.currentVersion + 1)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: storeURL.path))
+        }
+    }
+
     func testRepositoryRejectsOrphanStringsAndShots() async throws {
         let repository = LocalRangeSightRepository(storeURL: temporaryStoreURL())
         let timestamp = Date()

@@ -1,5 +1,9 @@
 import Foundation
 
+public enum RangeValidationSchema {
+    public static let currentVersion = 1
+}
+
 public struct RangeValidationConfiguration: Codable, Equatable, Sendable {
     public let coordinateTolerance: Double
     public let maximumConfirmationLatency: TimeInterval?
@@ -424,6 +428,7 @@ public struct RangeValidationCohortBreakdown: Codable, Equatable, Sendable, Iden
 }
 
 public struct RangeValidationReport: Codable, Equatable, Sendable, Identifiable {
+    public let schemaVersion: Int
     public let id: String
     public let manifest: ReplayManifest
     public let configuration: RangeValidationConfiguration
@@ -433,6 +438,19 @@ public struct RangeValidationReport: Codable, Equatable, Sendable, Identifiable 
     public let metrics: RangeValidationMetrics
     public let diagnostics: RangeValidationDiagnosticsSummary
     public let breakdowns: [RangeValidationBreakdown]
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case id
+        case manifest
+        case configuration
+        case context
+        case detections
+        case matches
+        case metrics
+        case diagnostics
+        case breakdowns
+    }
 
     public init(
         id: String,
@@ -448,6 +466,7 @@ public struct RangeValidationReport: Codable, Equatable, Sendable, Identifiable 
         }
 
         let metrics = RangeValidationMetrics(matches: matches)
+        schemaVersion = RangeValidationSchema.currentVersion
         self.id = id
         self.manifest = manifest
         self.configuration = configuration
@@ -464,18 +483,46 @@ public struct RangeValidationReport: Codable, Equatable, Sendable, Identifiable 
             )
         ]
     }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        guard schemaVersion == RangeValidationSchema.currentVersion else {
+            throw RangeValidationError.unsupportedValidationSchemaVersion(schemaVersion)
+        }
+
+        self.schemaVersion = schemaVersion
+        id = try container.decode(String.self, forKey: .id)
+        manifest = try container.decode(ReplayManifest.self, forKey: .manifest)
+        configuration = try container.decode(RangeValidationConfiguration.self, forKey: .configuration)
+        context = try container.decode(RangeValidationContext.self, forKey: .context)
+        detections = try container.decode([RangeValidationDetectedImpact].self, forKey: .detections)
+        matches = try container.decode([RangeValidationMatch].self, forKey: .matches)
+        metrics = try container.decode(RangeValidationMetrics.self, forKey: .metrics)
+        diagnostics = try container.decode(RangeValidationDiagnosticsSummary.self, forKey: .diagnostics)
+        breakdowns = try container.decode([RangeValidationBreakdown].self, forKey: .breakdowns)
+    }
 }
 
 public struct RangeValidationReportSuite: Codable, Equatable, Sendable, Identifiable {
+    public let schemaVersion: Int
     public let id: String
     public let reports: [RangeValidationReport]
     public let cohortBreakdowns: [RangeValidationCohortBreakdown]
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case id
+        case reports
+        case cohortBreakdowns
+    }
 
     public init(id: String, reports: [RangeValidationReport]) throws {
         guard !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw RangeValidationError.invalidReport
         }
 
+        schemaVersion = RangeValidationSchema.currentVersion
         self.id = id
         self.reports = reports.sorted {
             if $0.manifest.id == $1.manifest.id {
@@ -485,6 +532,19 @@ public struct RangeValidationReportSuite: Codable, Equatable, Sendable, Identifi
             return $0.manifest.id < $1.manifest.id
         }
         cohortBreakdowns = try Self.cohortBreakdowns(for: self.reports)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        guard schemaVersion == RangeValidationSchema.currentVersion else {
+            throw RangeValidationError.unsupportedValidationSchemaVersion(schemaVersion)
+        }
+
+        self.schemaVersion = schemaVersion
+        id = try container.decode(String.self, forKey: .id)
+        reports = try container.decode([RangeValidationReport].self, forKey: .reports)
+        cohortBreakdowns = try container.decode([RangeValidationCohortBreakdown].self, forKey: .cohortBreakdowns)
     }
 
     private static func cohortBreakdowns(for reports: [RangeValidationReport]) throws -> [RangeValidationCohortBreakdown] {
@@ -734,4 +794,5 @@ public enum RangeValidationError: Error, Equatable {
     case invalidMatch
     case invalidDiagnostics
     case invalidReport
+    case unsupportedValidationSchemaVersion(Int)
 }

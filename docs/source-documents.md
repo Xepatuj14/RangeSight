@@ -14,6 +14,6 @@ These project documents remain the product and slice-order authority for RangeSi
 
 ## Active Slice
 
-Slice 6: Native camera preview.
+Slice 19: Release hardening.
 
-Deliverable: Swift/AVFoundation permission handling, camera preview lifecycle, and SwiftUI preview surface. Slice 7 has not started.
+Deliverable: permission/privacy hardening, migration and failure-state checks, TestFlight checklist, and release status documentation. Slice 20 has not started.

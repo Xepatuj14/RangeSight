@@ -56,6 +56,8 @@
 		2A000001000000000000002F /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102F /* PerformanceTests.swift */; };
 		2A0000010000000000000030 /* ValidationBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001030 /* ValidationBoundary.swift */; };
 		2A0000010000000000000031 /* ValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001031 /* ValidationTests.swift */; };
+		2A0000010000000000000032 /* ReleaseHardeningBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001032 /* ReleaseHardeningBoundary.swift */; };
+		2A0000010000000000000033 /* ReleaseHardeningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001033 /* ReleaseHardeningTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -136,6 +138,8 @@
 		2A000001000000000000102F /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000001030 /* ValidationBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationBoundary.swift; sourceTree = "<group>"; };
 		2A0000010000000000001031 /* ValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001032 /* ReleaseHardeningBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseHardeningBoundary.swift; sourceTree = "<group>"; };
+		2A0000010000000000001033 /* ReleaseHardeningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseHardeningTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -194,6 +198,7 @@
 				2A0000010000000000007014 /* Performance */,
 				2A000001000000000000700D /* Replay */,
 				2A0000010000000000007015 /* Validation */,
+				2A0000010000000000007016 /* Release */,
 			);
 			path = RangeSight;
 			sourceTree = "<group>";
@@ -315,6 +320,14 @@
 			path = Validation;
 			sourceTree = "<group>";
 		};
+		2A0000010000000000007016 /* Release */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000010000000000001032 /* ReleaseHardeningBoundary.swift */,
+			);
+			path = Release;
+			sourceTree = "<group>";
+		};
 		2A0000010000000000007010 /* RangeSightTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -333,6 +346,7 @@
 				2A000001000000000000102D /* AnalyticsTests.swift */,
 				2A000001000000000000102F /* PerformanceTests.swift */,
 				2A0000010000000000001031 /* ValidationTests.swift */,
+				2A0000010000000000001033 /* ReleaseHardeningTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -506,6 +520,7 @@
 				2A000001000000000000002E /* PerformanceBoundary.swift in Sources */,
 				2A000001000000000000000D /* ReplayBoundary.swift in Sources */,
 				2A0000010000000000000030 /* ValidationBoundary.swift in Sources */,
+				2A0000010000000000000032 /* ReleaseHardeningBoundary.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -528,6 +543,7 @@
 				2A000001000000000000002D /* AnalyticsTests.swift in Sources */,
 				2A000001000000000000002F /* PerformanceTests.swift in Sources */,
 				2A0000010000000000000031 /* ValidationTests.swift in Sources */,
+				2A0000010000000000000033 /* ReleaseHardeningTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -671,7 +687,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "RangeSight uses the camera to monitor a paper target during an active range session.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "RangeSight may use audio impulses to narrow visual detection windows. Visual confirmation is still required.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Optional Audio Assist listens for transient sound events to help time visual analysis. Audio does not independently determine hits.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -693,7 +709,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "RangeSight uses the camera to monitor a paper target during an active range session.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "RangeSight may use audio impulses to narrow visual detection windows. Visual confirmation is still required.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Optional Audio Assist listens for transient sound events to help time visual analysis. Audio does not independently determine hits.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

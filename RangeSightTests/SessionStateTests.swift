@@ -15,4 +15,11 @@ final class SessionStateTests: XCTestCase {
         XCTAssertNil(SessionStateMachine.nextState(from: .idle, event: .startString))
         XCTAssertNil(SessionStateMachine.nextState(from: .saved, event: .startString))
     }
+
+    func testRepeatedSessionActionsAreRejectedAfterStateHasAdvanced() {
+        XCTAssertNil(SessionStateMachine.nextState(from: .monitoring, event: .startString))
+        XCTAssertNil(SessionStateMachine.nextState(from: .reviewing, event: .endString))
+        XCTAssertNil(SessionStateMachine.nextState(from: .saved, event: .save))
+        XCTAssertNil(SessionStateMachine.nextState(from: .saved, event: .endString))
+    }
 }

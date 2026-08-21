@@ -68,10 +68,18 @@ struct CameraPreviewSurface: View {
                         .padding(12)
                 }
 
-            Text(statusText.uppercased())
-                .font(.caption.bold())
-                .foregroundStyle(.yellow)
-                .padding(.bottom, 16)
+            VStack(spacing: 4) {
+                Text(statusText.uppercased())
+                    .font(.caption.bold())
+                if let recoveryText {
+                    Text(recoveryText)
+                        .font(.caption)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                }
+            }
+            .foregroundStyle(.yellow)
+            .padding(.bottom, 16)
         }
         .frame(minHeight: 360)
         .task {
@@ -106,6 +114,15 @@ struct CameraPreviewSurface: View {
             return "Preview stopped"
         default:
             return "Camera preview"
+        }
+    }
+
+    private var recoveryText: String? {
+        switch model.authorizationState {
+        case .denied, .restricted:
+            return ReleasePermissionCopy.cameraMessage(for: model.authorizationState)
+        default:
+            return nil
         }
     }
 

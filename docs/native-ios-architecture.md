@@ -28,8 +28,11 @@ The product requirements and slice order remain valid, but implementation must u
 | `RangeSight/Audio` | Audio impulse candidate boundary. |
 | `RangeSight/Scoring` | Future target geometry, group metrics, and scoring evaluation. |
 | `RangeSight/Persistence` | Local-first storage boundary. |
-| `RangeSight/Analytics` | Future local analytics and diagnostics boundary. |
-| `RangeSight/Replay` | Replay/validation boundary for recorded footage. |
+| `RangeSight/Analytics` | Local session history analytics and detector/correction summaries. |
+| `RangeSight/Replay` | Replay harness boundary for recorded/labeled footage. |
+| `RangeSight/Performance` | ROI extraction, scheduling, thermal/power policy, and performance diagnostics. |
+| `RangeSight/Validation` | Internal replay/range validation reporting and export models. |
+| `RangeSight/Release` | Release-hardening severity, permission, and privacy copy boundaries. |
 
 ## Development Workflow
 
@@ -56,16 +59,37 @@ The Xcode build/test commands are authoritative for native app readiness. `swift
 
 ## Migration Notes
 
-Slices 1 and 2 were reimplemented natively:
+Slices 1 through 19 have been implemented under the native architecture:
 
 - Slice 1: SwiftUI app shell, native navigation model, Xcode project/scheme, Swift package/test baseline, CI workflow.
 - Slice 2: Swift domain models, normalized target coordinates, schema-versioned serialization, unit tests.
 - Slice 3: Native scoring/geometry engine for physical coordinate conversion, group metrics, scoring-zone interfaces, score evaluation, and deterministic tests.
 - Slice 4: Native SwiftUI session UX shell for Home, setup, camera setup, live monitor mock, review, summary/history, firearm profile, and settings screens using fake presentation data.
 - Slice 5: Local-first persistence boundary with schema-versioned JSON storage and create/read/update flows for sessions, strings, shots, firearm profiles, and target definitions.
-- Slice 6: Native AVFoundation camera permission handling, preview session lifecycle, and SwiftUI preview surface. No ROI lock or CV processing is implemented in this slice.
+- Slice 6: Native AVFoundation camera permission handling, preview session lifecycle, and SwiftUI preview surface.
+- Slice 7: Target lock and ROI metadata.
+- Slice 8: Replay harness.
+- Slice 9: Frame registration.
+- Slice 10: Registered frame difference/change detection.
+- Slice 10.5: Registration transform applied to pixel data.
+- Slice 11: Temporal confirmation.
+- Slice 12: Live impact events.
+- Slice 13: Correction workflow.
+- Slice 13.5: Persisted correction history and raw detector evidence.
+- Slice 14: Optional audio assist.
+- Slice 15: Supported target scoring.
+- Slice 16: Session history analytics.
+- Slice 17: Performance hardening.
+- Slice 18: Range validation tooling.
+- Slice 19: Release hardening.
 
-Slice 7 has not been implemented.
+Current schema versions:
+
+- Domain schema: 1
+- Persistence schema: 2
+- Validation report schema: 1
+
+Release status is tracked in `docs/release/RELEASE_STATUS.md`. TestFlight readiness tasks are tracked in `docs/release/TESTFLIGHT_CHECKLIST.md`. A green CI build is not equivalent to physical range validation.
 
 ## Package.swift Decision
 

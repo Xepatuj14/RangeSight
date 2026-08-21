@@ -46,7 +46,7 @@ struct TargetPreviewView: View {
             StatusBadge(text: status)
         }
         .frame(minHeight: 360)
-        .accessibilityLabel("Mock target preview")
+        .accessibilityLabel("Target preview")
     }
 }
 

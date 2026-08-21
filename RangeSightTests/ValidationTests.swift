@@ -188,6 +188,7 @@ final class ValidationTests: XCTestCase {
         let targetDefinitionID = try TargetDefinitionID("b8-repair-center")
 
         XCTAssertEqual(decoded, report)
+        XCTAssertEqual(decoded.schemaVersion, RangeValidationSchema.currentVersion)
         XCTAssertEqual(decoded.breakdowns.first?.key.targetDefinitionID, targetDefinitionID)
         XCTAssertEqual(decoded.breakdowns.first?.key.distance, 15)
         XCTAssertEqual(decoded.breakdowns.first?.key.caliber, "9mm")
@@ -215,6 +216,7 @@ final class ValidationTests: XCTestCase {
         let data = try RangeValidationReportExporter.jsonData(for: suite)
         let decoded = try JSONDecoder().decode(RangeValidationReportSuite.self, from: data)
 
+        XCTAssertEqual(decoded.schemaVersion, RangeValidationSchema.currentVersion)
         XCTAssertEqual(decoded.reports.map(\.manifest.id), ["distance-15", "distance-7"])
         XCTAssertEqual(decoded.cohortBreakdowns.count, 2)
 
@@ -225,6 +227,28 @@ final class ValidationTests: XCTestCase {
         let fifteenYard = try XCTUnwrap(decoded.cohortBreakdowns.first { $0.key.distance == 15 })
         XCTAssertEqual(fifteenYard.metrics.missedImpactCount, 1)
         XCTAssertEqual(fifteenYard.metrics.recall ?? -1, 0)
+    }
+
+    func testValidationReportRejectsUnsupportedFutureSchema() throws {
+        let report = try report(
+            id: "future-schema-fixture",
+            distance: 7,
+            condition: "lane-a",
+            truthID: "truth-1",
+            detectionID: "detected-1"
+        )
+        let data = try RangeValidationReportExporter.jsonData(for: report)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var futureObject = object
+        futureObject["schemaVersion"] = RangeValidationSchema.currentVersion + 1
+        let futureData = try JSONSerialization.data(withJSONObject: futureObject, options: [.sortedKeys])
+
+        do {
+            _ = try JSONDecoder().decode(RangeValidationReport.self, from: futureData)
+            XCTFail("Expected unsupported validation schema to fail.")
+        } catch RangeValidationError.unsupportedValidationSchemaVersion(let version) {
+            XCTAssertEqual(version, RangeValidationSchema.currentVersion + 1)
+        }
     }
 
     func testLiveImpactEventsConvertToValidationDetections() throws {

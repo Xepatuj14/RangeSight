@@ -146,7 +146,14 @@ public enum AppNavigation {
 
     public static func screen(for id: AppScreenID) -> AppScreen {
         guard let screen = screens.first(where: { $0.id == id }) else {
-            preconditionFailure("Unknown RangeSight screen: \(id.rawValue)")
+            return screens.first { $0.id == homeScreenID } ?? AppScreen(
+                id: .home,
+                title: "Home",
+                phase: .idle,
+                description: "Start a new range session or inspect saved history.",
+                previewStatus: "No active session",
+                actions: []
+            )
         }
         return screen
     }

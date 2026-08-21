@@ -80,7 +80,7 @@ public final class AVAudioEngineImpulseCandidateSource: AudioImpulseCandidateSou
             return .running
         } catch {
             stopSynchronously()
-            return .failed(String(describing: error))
+            return .failed(ReleasePermissionCopy.audioCaptureMessage(for: .failed("")))
         }
     }
 

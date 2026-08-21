@@ -787,9 +787,12 @@ struct SessionShellView: View {
                 row(title: "Shot source", value: "Visual confirmation required")
             }
             section("Privacy") {
-                row(title: "Camera frames", value: "Local")
-                row(title: "Microphone audio", value: "On-device impulse metadata")
-                row(title: "Debug imagery", value: "Off")
+                ForEach(ReleasePrivacyDisclosure.allCopy, id: \.self) { disclosure in
+                    Text(disclosure)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }

@@ -89,7 +89,7 @@ struct MockRangeSessionData: Equatable {
         do {
             return try NormalizedTargetCoordinate(x: x, y: y)
         } catch {
-            preconditionFailure("Invalid mock target coordinate: \(x), \(y)")
+            return try! NormalizedTargetCoordinate(x: 0.5, y: 0.5)
         }
     }
 }
