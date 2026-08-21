@@ -7,6 +7,16 @@ struct MockShotMarker: Identifiable, Equatable {
     let score: Int
     let confidence: Double
     let source: ShotSource
+
+    func moved(to coordinate: NormalizedTargetCoordinate) -> MockShotMarker {
+        MockShotMarker(
+            id: id,
+            normalized: coordinate,
+            score: score,
+            confidence: confidence,
+            source: .corrected
+        )
+    }
 }
 
 struct MockImpactCandidateMarker: Identifiable, Equatable {

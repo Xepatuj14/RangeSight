@@ -4,6 +4,12 @@ import RangeSightCore
 struct SessionShellView: View {
     @State private var selectedScreen: AppScreenID = .home
     @State private var targetLockSource: TargetLockSource = .assisted
+    @State private var selectedShotID: Int?
+    @State private var selectedCandidateID: String?
+    @State private var isAddingImpact = false
+    @State private var isMovingImpact = false
+    @State private var editableShots = MockRangeSessionData.sample.shots
+    @State private var editableCandidates = MockRangeSessionData.sample.candidates
     private let data = MockRangeSessionData.sample
 
     private var screen: AppScreen {
@@ -97,7 +103,7 @@ struct SessionShellView: View {
 
     private var metricStrip: some View {
         HStack(spacing: 12) {
-            metric(value: "\(data.shotCount)", label: "Shots")
+            metric(value: "\(editableShots.count)", label: "Shots")
             metric(value: data.latestScore, label: "Latest")
             metric(value: data.groupSize, label: "Group")
         }
@@ -191,7 +197,8 @@ struct SessionShellView: View {
 
     private var liveMonitorView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TargetPreviewView(shots: data.shots, candidates: data.candidates, status: "Monitoring")
+            correctionTargetPreview(status: correctionStatus(defaultStatus: "Monitoring"))
+            correctionControls
             HStack(spacing: 12) {
                 primaryAction("Pause", systemImage: "pause.fill", destination: .cameraSetup)
                 primaryAction("End String", systemImage: "stop.fill", destination: .stringReview)
@@ -201,14 +208,166 @@ struct SessionShellView: View {
 
     private var reviewView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TargetPreviewView(shots: data.shots, candidates: [], status: "Review")
+            correctionTargetPreview(status: correctionStatus(defaultStatus: "Review"))
             section("Corrections") {
-                row(title: "Candidate", value: "Confirm or ignore")
-                row(title: "Manual add", value: "Available")
-                row(title: "Move/delete", value: "Tap marker")
+                correctionControls
             }
             primaryAction("Save String", systemImage: "checkmark.circle.fill", destination: .sessionSummary)
         }
+    }
+
+    private func correctionTargetPreview(status: String) -> some View {
+        TargetPreviewView(
+            shots: editableShots,
+            candidates: editableCandidates,
+            status: status,
+            selectedShotID: selectedShotID,
+            selectedCandidateID: selectedCandidateID,
+            onShotSelected: { shotID in
+                selectedShotID = shotID
+                selectedCandidateID = nil
+                isAddingImpact = false
+                isMovingImpact = false
+            },
+            onCandidateSelected: { candidateID in
+                selectedCandidateID = candidateID
+                selectedShotID = nil
+                isAddingImpact = false
+                isMovingImpact = false
+            },
+            onTargetTapped: { coordinate in
+                handleTargetTap(coordinate)
+            }
+        )
+    }
+
+    private var correctionControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Button {
+                    isAddingImpact.toggle()
+                    isMovingImpact = false
+                    selectedShotID = nil
+                    selectedCandidateID = nil
+                } label: {
+                    Label(isAddingImpact ? "Cancel Add" : "Add Impact", systemImage: isAddingImpact ? "xmark.circle" : "plus.circle")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(isAddingImpact ? Theme.warning : Theme.accent)
+
+                Button {
+                    confirmSelectedCandidate()
+                } label: {
+                    Label("Confirm", systemImage: "checkmark.circle")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .disabled(selectedCandidateID == nil)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    isMovingImpact.toggle()
+                    isAddingImpact = false
+                } label: {
+                    Label(isMovingImpact ? "Cancel Move" : "Move", systemImage: "arrow.up.and.down.and.arrow.left.and.right")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .disabled(selectedShotID == nil)
+
+                Button {
+                    deleteSelectedShot()
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.warning)
+                .disabled(selectedShotID == nil)
+
+                Button {
+                    selectedShotID = nil
+                    selectedCandidateID = nil
+                    isAddingImpact = false
+                    isMovingImpact = false
+                } label: {
+                    Label("Clear", systemImage: "circle")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+
+    private func correctionStatus(defaultStatus: String) -> String {
+        if isAddingImpact {
+            return "Tap target to add"
+        }
+
+        if isMovingImpact {
+            return "Tap target to move"
+        }
+
+        return defaultStatus
+    }
+
+    private func handleTargetTap(_ coordinate: NormalizedTargetCoordinate) {
+        if isAddingImpact {
+            let nextID = (editableShots.map(\.id).max() ?? 0) + 1
+            editableShots.append(
+                MockShotMarker(
+                    id: nextID,
+                    normalized: coordinate,
+                    score: 0,
+                    confidence: 0,
+                    source: .manualAdded
+                )
+            )
+            selectedShotID = nextID
+            isAddingImpact = false
+            return
+        }
+
+        if isMovingImpact,
+           let selectedShotID,
+           let index = editableShots.firstIndex(where: { $0.id == selectedShotID }) {
+            editableShots[index] = editableShots[index].moved(to: coordinate)
+            isMovingImpact = false
+        }
+    }
+
+    private func confirmSelectedCandidate() {
+        guard let selectedCandidateID,
+              let index = editableCandidates.firstIndex(where: { $0.id == selectedCandidateID }) else {
+            return
+        }
+
+        let candidate = editableCandidates.remove(at: index)
+        let nextID = (editableShots.map(\.id).max() ?? 0) + 1
+        editableShots.append(
+            MockShotMarker(
+                id: nextID,
+                normalized: candidate.normalized,
+                score: 0,
+                confidence: candidate.confidence,
+                source: .userConfirmed
+            )
+        )
+        self.selectedCandidateID = nil
+        selectedShotID = nextID
+        isMovingImpact = false
+    }
+
+    private func deleteSelectedShot() {
+        guard let selectedShotID else {
+            return
+        }
+
+        editableShots.removeAll { $0.id == selectedShotID }
+        self.selectedShotID = nil
+        isMovingImpact = false
     }
 
     private var summaryView: some View {

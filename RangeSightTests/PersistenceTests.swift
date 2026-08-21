@@ -119,6 +119,58 @@ final class PersistenceTests: XCTestCase {
         }
     }
 
+    func testRepositoryPersistsCorrectedShotFinalAndOriginalCoordinates() async throws {
+        let repository = LocalRangeSightRepository(storeURL: temporaryStoreURL())
+        let sessionID = try RangeSessionID("session-1")
+        let stringID = try RangeStringID("string-1")
+        let targetID = try TargetDefinitionID("target-1")
+        let timestamp = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-08-20T12:00:00Z"))
+
+        try await repository.upsertRangeSession(
+            RangeSession(
+                id: sessionID,
+                startedAt: timestamp,
+                endedAt: nil,
+                distance: 10,
+                distanceUnit: .yard,
+                firearmID: nil,
+                targetDefinitionID: targetID,
+                device: DeviceMetadata(platform: .iOS, modelName: nil, osVersion: nil, appVersion: nil)
+            )
+        )
+        try await repository.upsertRangeString(
+            RangeString(
+                id: stringID,
+                sessionID: sessionID,
+                index: 1,
+                baselineAssetID: nil,
+                startedAt: timestamp,
+                endedAt: nil
+            )
+        )
+
+        var correctionState = ImpactCorrectionState()
+        let detected = try correctionState.ingestDetectorEvent(
+            id: try ShotID("shot-1"),
+            stringID: stringID,
+            eventID: "event-1",
+            coordinate: try NormalizedTargetCoordinate(x: 0.5, y: 0.5),
+            confidence: 0.91,
+            timestamp: timestamp
+        )
+        _ = try correctionState.moveImpact(id: detected.id, to: try NormalizedTargetCoordinate(x: 0.57, y: 0.47))
+
+        let correctedShot = try XCTUnwrap(correctionState.shotsForPersistence().first)
+        try await repository.upsertShot(correctedShot)
+
+        let reloadedShots = try await repository.shots(stringID: stringID)
+        let reloaded = try XCTUnwrap(reloadedShots.first)
+        XCTAssertEqual(reloaded.normalized, try NormalizedTargetCoordinate(x: 0.57, y: 0.47))
+        XCTAssertEqual(reloaded.originalNormalized, try NormalizedTargetCoordinate(x: 0.5, y: 0.5))
+        XCTAssertEqual(reloaded.source, .corrected)
+        XCTAssertTrue(reloaded.corrected)
+    }
+
     func testRepositoryRejectsOrphanStringsAndShots() async throws {
         let repository = LocalRangeSightRepository(storeURL: temporaryStoreURL())
         let timestamp = Date()

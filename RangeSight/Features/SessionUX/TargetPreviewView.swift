@@ -1,9 +1,35 @@
 import SwiftUI
+import RangeSightCore
 
 struct TargetPreviewView: View {
     let shots: [MockShotMarker]
     let candidates: [MockImpactCandidateMarker]
     let status: String
+    let selectedShotID: Int?
+    let selectedCandidateID: String?
+    let onShotSelected: (Int) -> Void
+    let onCandidateSelected: (String) -> Void
+    let onTargetTapped: (NormalizedTargetCoordinate) -> Void
+
+    init(
+        shots: [MockShotMarker],
+        candidates: [MockImpactCandidateMarker],
+        status: String,
+        selectedShotID: Int? = nil,
+        selectedCandidateID: String? = nil,
+        onShotSelected: @escaping (Int) -> Void = { _ in },
+        onCandidateSelected: @escaping (String) -> Void = { _ in },
+        onTargetTapped: @escaping (NormalizedTargetCoordinate) -> Void = { _ in }
+    ) {
+        self.shots = shots
+        self.candidates = candidates
+        self.status = status
+        self.selectedShotID = selectedShotID
+        self.selectedCandidateID = selectedCandidateID
+        self.onShotSelected = onShotSelected
+        self.onCandidateSelected = onCandidateSelected
+        self.onTargetTapped = onTargetTapped
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -27,7 +53,12 @@ struct TargetPreviewView: View {
                         .frame(width: 10, height: 10)
 
                     ForEach(shots) { shot in
-                        ShotMarkerView(shot: shot)
+                        Button {
+                            onShotSelected(shot.id)
+                        } label: {
+                            ShotMarkerView(shot: shot, isSelected: shot.id == selectedShotID)
+                        }
+                        .buttonStyle(.plain)
                             .position(
                                 x: shot.normalized.x * side,
                                 y: shot.normalized.y * side
@@ -35,7 +66,12 @@ struct TargetPreviewView: View {
                     }
 
                     ForEach(candidates) { candidate in
-                        CandidateMarkerView(candidate: candidate)
+                        Button {
+                            onCandidateSelected(candidate.id)
+                        } label: {
+                            CandidateMarkerView(candidate: candidate, isSelected: candidate.id == selectedCandidateID)
+                        }
+                        .buttonStyle(.plain)
                             .position(
                                 x: candidate.normalized.x * side,
                                 y: candidate.normalized.y * side
@@ -44,6 +80,22 @@ struct TargetPreviewView: View {
                 }
                 .frame(width: side, height: side)
                 .position(x: originX + side / 2, y: originY + side / 2)
+                .contentShape(Rectangle())
+                .gesture(
+                    SpatialTapGesture()
+                        .onEnded { value in
+                            guard let coordinate = try? TargetDisplayGeometry(
+                                containerWidth: side,
+                                containerHeight: side
+                            ).normalizedCoordinate(at: DisplayPoint(x: value.location.x, y: value.location.y)) else {
+                                return
+                            }
+
+                            if let coordinate {
+                                onTargetTapped(coordinate)
+                            }
+                        }
+                )
             }
             .padding(16)
 
@@ -59,10 +111,11 @@ struct TargetPreviewView: View {
 
 private struct CandidateMarkerView: View {
     let candidate: MockImpactCandidateMarker
+    let isSelected: Bool
 
     var body: some View {
         Circle()
-            .stroke(Color.orange, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
+            .stroke(isSelected ? Color.white : Color.orange, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
             .frame(width: 34, height: 34)
             .accessibilityLabel("Candidate impact \(candidate.id)")
     }
@@ -70,6 +123,7 @@ private struct CandidateMarkerView: View {
 
 private struct ShotMarkerView: View {
     let shot: MockShotMarker
+    let isSelected: Bool
 
     var body: some View {
         ZStack {
@@ -77,8 +131,8 @@ private struct ShotMarkerView: View {
                 .fill(shot.source == .autoConfirmed ? Color.yellow : Color.orange)
                 .frame(width: 30, height: 30)
             Circle()
-                .stroke(Color.black, lineWidth: 2)
-                .frame(width: 30, height: 30)
+                .stroke(isSelected ? Color.white : Color.black, lineWidth: isSelected ? 4 : 2)
+                .frame(width: isSelected ? 34 : 30, height: isSelected ? 34 : 30)
             Text("\(shot.id)")
                 .font(.caption.bold())
                 .foregroundStyle(Color.black)
