@@ -211,14 +211,18 @@ jobs:
           set -euo pipefail
 
           APP_PATH="$ARCHIVE_PATH/Products/Applications/RangeSight.app"
+          APP_EXECUTABLE="$APP_PATH/RangeSight"
           FRAMEWORK_PATH="$APP_PATH/Frameworks/RangeSightCore.framework"
+          FRAMEWORK_BINARY="$FRAMEWORK_PATH/RangeSightCore"
           INFO_PLIST="$APP_PATH/Info.plist"
           EMBEDDED_PROFILE="$APP_PATH/embedded.mobileprovision"
           ARCHIVE_PROFILE_PLIST="$RUNNER_TEMP/archive-embedded-profile.plist"
 
           test -d "$ARCHIVE_PATH"
           test -d "$APP_PATH"
+          test -f "$APP_EXECUTABLE"
           test -d "$FRAMEWORK_PATH"
+          test -f "$FRAMEWORK_BINARY"
           test -f "$INFO_PLIST"
           test -f "$EMBEDDED_PROFILE"
 
@@ -253,6 +257,24 @@ jobs:
           codesign -dv "$APP_PATH" 2>&1 | sed -n '/Authority=/p;/TeamIdentifier=/p'
           codesign --verify --strict "$FRAMEWORK_PATH"
           codesign -dv "$FRAMEWORK_PATH" 2>&1 | sed -n '/Authority=/p;/TeamIdentifier=/p'
+
+          if ! otool -l "$APP_EXECUTABLE" | grep -A2 LC_RPATH | grep -q '@executable_path/Frameworks'; then
+            echo "Archived RangeSight executable is missing @executable_path/Frameworks LC_RPATH." >&2
+            exit 1
+          fi
+
+          if ! otool -L "$APP_EXECUTABLE" | grep -q '@rpath/RangeSightCore.framework/RangeSightCore'; then
+            echo "Archived RangeSight executable does not reference RangeSightCore through @rpath." >&2
+            otool -L "$APP_EXECUTABLE"
+            exit 1
+          fi
+
+          if ! otool -D "$FRAMEWORK_BINARY" | grep -q '@rpath/RangeSightCore.framework/RangeSightCore'; then
+            echo "Archived RangeSightCore install name is not @rpath/RangeSightCore.framework/RangeSightCore." >&2
+            otool -D "$FRAMEWORK_BINARY"
+            exit 1
+          fi
+
           /usr/libexec/PlistBuddy -c 'Print :DTXcode' "$INFO_PLIST" || true
           /usr/libexec/PlistBuddy -c 'Print :DTSDKName' "$INFO_PLIST" || true
           echo "Verified app bundle ID: $ACTUAL_BUNDLE_ID"
@@ -321,6 +343,50 @@ jobs:
           echo "IPA path: $IPA_PATH"
           echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
 
+      - name: Verify exported IPA runtime structure
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          IPA_VERIFY_DIR="$RUNNER_TEMP/ipa-verify"
+          rm -rf "$IPA_VERIFY_DIR"
+          mkdir -p "$IPA_VERIFY_DIR"
+
+          unzip -q "$IPA_PATH" -d "$IPA_VERIFY_DIR"
+
+          EXPORTED_APP_PATH="$IPA_VERIFY_DIR/Payload/RangeSight.app"
+          EXPORTED_APP_EXECUTABLE="$EXPORTED_APP_PATH/RangeSight"
+          EXPORTED_FRAMEWORK_PATH="$EXPORTED_APP_PATH/Frameworks/RangeSightCore.framework"
+          EXPORTED_FRAMEWORK_BINARY="$EXPORTED_FRAMEWORK_PATH/RangeSightCore"
+
+          test -d "$EXPORTED_APP_PATH"
+          test -f "$EXPORTED_APP_EXECUTABLE"
+          test -d "$EXPORTED_FRAMEWORK_PATH"
+          test -f "$EXPORTED_FRAMEWORK_BINARY"
+
+          if ! otool -l "$EXPORTED_APP_EXECUTABLE" | grep -A2 LC_RPATH | grep -q '@executable_path/Frameworks'; then
+            echo "Exported IPA RangeSight executable is missing @executable_path/Frameworks LC_RPATH." >&2
+            exit 1
+          fi
+
+          if ! otool -L "$EXPORTED_APP_EXECUTABLE" | grep -q '@rpath/RangeSightCore.framework/RangeSightCore'; then
+            echo "Exported IPA RangeSight executable does not reference RangeSightCore through @rpath." >&2
+            otool -L "$EXPORTED_APP_EXECUTABLE"
+            exit 1
+          fi
+
+          if ! otool -D "$EXPORTED_FRAMEWORK_BINARY" | grep -q '@rpath/RangeSightCore.framework/RangeSightCore'; then
+            echo "Exported IPA RangeSightCore install name is not @rpath/RangeSightCore.framework/RangeSightCore." >&2
+            otool -D "$EXPORTED_FRAMEWORK_BINARY"
+            exit 1
+          fi
+
+          codesign --verify --deep --strict "$EXPORTED_APP_PATH"
+          codesign --verify --strict "$EXPORTED_FRAMEWORK_PATH"
+
+          echo "Verified exported IPA embeds RangeSightCore.framework with valid @rpath linkage."
+          echo "IPA_VERIFY_DIR=$IPA_VERIFY_DIR" >> "$GITHUB_ENV"
+
       - name: Verify App Store Connect upload tool
         shell: bash
         run: |
@@ -371,3 +437,4 @@ jobs:
           rm -f "${ASC_KEY_PATH:-}"
           rm -f "${EXPORT_OPTIONS_PLIST:-}"
           rm -f "${ARCHIVE_PROFILE_PLIST:-}"
+          rm -rf "${IPA_VERIFY_DIR:-}"
