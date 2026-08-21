@@ -5,12 +5,12 @@ final class AnalyticsTests: XCTestCase {
     func testAggregatesSessionsShotsGroupsScoresAndRecords() throws {
         let store = try makeStore(
             sessions: [
-                session("session-1", startedAt: date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
-                session("session-2", startedAt: date("2026-08-02T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
+                session("session-1", startedAt: try date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
+                session("session-2", startedAt: try date("2026-08-02T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
             ],
             strings: [
-                string("string-1", sessionID: sessionID("session-1"), index: 1, startedAt: date("2026-08-01T10:01:00Z")),
-                string("string-2", sessionID: sessionID("session-2"), index: 1, startedAt: date("2026-08-02T10:01:00Z"))
+                string("string-1", sessionID: sessionID("session-1"), index: 1, startedAt: try date("2026-08-01T10:01:00Z")),
+                string("string-2", sessionID: sessionID("session-2"), index: 1, startedAt: try date("2026-08-02T10:01:00Z"))
             ],
             shots: [
                 shot("shot-1", stringID: stringID("string-1"), ordinal: 1, physical: point(0, 0), score: 10),
@@ -38,18 +38,18 @@ final class AnalyticsTests: XCTestCase {
     func testFiltersByFirearmDistanceTargetAndDateRange() throws {
         let store = try makeStore(
             sessions: [
-                session("session-a", startedAt: date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 10, targetID: targetA),
-                session("session-b", startedAt: date("2026-08-02T10:00:00Z"), firearmID: firearmB, distance: 10, targetID: targetA),
-                session("session-c", startedAt: date("2026-08-03T10:00:00Z"), firearmID: firearmA, distance: 15, targetID: targetA),
-                session("session-d", startedAt: date("2026-08-04T10:00:00Z"), firearmID: firearmA, distance: 10, targetID: targetB),
-                session("session-e", startedAt: date("2026-08-05T10:00:00Z"), firearmID: firearmA, distance: 10, targetID: targetA)
+                session("session-a", startedAt: try date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 10, targetID: targetA),
+                session("session-b", startedAt: try date("2026-08-02T10:00:00Z"), firearmID: firearmB, distance: 10, targetID: targetA),
+                session("session-c", startedAt: try date("2026-08-03T10:00:00Z"), firearmID: firearmA, distance: 15, targetID: targetA),
+                session("session-d", startedAt: try date("2026-08-04T10:00:00Z"), firearmID: firearmA, distance: 10, targetID: targetB),
+                session("session-e", startedAt: try date("2026-08-05T10:00:00Z"), firearmID: firearmA, distance: 10, targetID: targetA)
             ],
             strings: [
-                string("string-a", sessionID: sessionID("session-a"), index: 1, startedAt: date("2026-08-01T10:01:00Z")),
-                string("string-b", sessionID: sessionID("session-b"), index: 1, startedAt: date("2026-08-02T10:01:00Z")),
-                string("string-c", sessionID: sessionID("session-c"), index: 1, startedAt: date("2026-08-03T10:01:00Z")),
-                string("string-d", sessionID: sessionID("session-d"), index: 1, startedAt: date("2026-08-04T10:01:00Z")),
-                string("string-e", sessionID: sessionID("session-e"), index: 1, startedAt: date("2026-08-05T10:01:00Z"))
+                string("string-a", sessionID: sessionID("session-a"), index: 1, startedAt: try date("2026-08-01T10:01:00Z")),
+                string("string-b", sessionID: sessionID("session-b"), index: 1, startedAt: try date("2026-08-02T10:01:00Z")),
+                string("string-c", sessionID: sessionID("session-c"), index: 1, startedAt: try date("2026-08-03T10:01:00Z")),
+                string("string-d", sessionID: sessionID("session-d"), index: 1, startedAt: try date("2026-08-04T10:01:00Z")),
+                string("string-e", sessionID: sessionID("session-e"), index: 1, startedAt: try date("2026-08-05T10:01:00Z"))
             ],
             shots: [
                 shot("shot-a1", stringID: stringID("string-a"), ordinal: 1, physical: point(0, 0), score: 10),
@@ -70,8 +70,8 @@ final class AnalyticsTests: XCTestCase {
                 distanceUnit: .yard,
                 targetDefinitionID: targetA,
                 dateRange: .custom(
-                    start: date("2026-08-01T00:00:00Z"),
-                    end: date("2026-08-05T00:00:00Z")
+                    start: try date("2026-08-01T00:00:00Z"),
+                    end: try date("2026-08-05T00:00:00Z")
                 )
             )
         )
@@ -85,12 +85,12 @@ final class AnalyticsTests: XCTestCase {
     func testCustomDateRangeIsStartInclusiveAndEndExclusive() throws {
         let store = try makeStore(
             sessions: [
-                session("start", startedAt: date("2026-08-10T00:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
-                session("end", startedAt: date("2026-08-11T00:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
+                session("start", startedAt: try date("2026-08-10T00:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
+                session("end", startedAt: try date("2026-08-11T00:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
             ],
             strings: [
-                string("start-string", sessionID: sessionID("start"), index: 1, startedAt: date("2026-08-10T00:01:00Z")),
-                string("end-string", sessionID: sessionID("end"), index: 1, startedAt: date("2026-08-11T00:01:00Z"))
+                string("start-string", sessionID: sessionID("start"), index: 1, startedAt: try date("2026-08-10T00:01:00Z")),
+                string("end-string", sessionID: sessionID("end"), index: 1, startedAt: try date("2026-08-11T00:01:00Z"))
             ],
             shots: [
                 shot("start-shot-1", stringID: stringID("start-string"), ordinal: 1, physical: point(0, 0), score: nil),
@@ -103,8 +103,8 @@ final class AnalyticsTests: XCTestCase {
             for: store,
             filter: AnalyticsFilter(
                 dateRange: .custom(
-                    start: date("2026-08-10T00:00:00Z"),
-                    end: date("2026-08-11T00:00:00Z")
+                    start: try date("2026-08-10T00:00:00Z"),
+                    end: try date("2026-08-11T00:00:00Z")
                 )
             )
         )
@@ -118,7 +118,7 @@ final class AnalyticsTests: XCTestCase {
             id: shotID("shot-corrected"),
             stringID: stringID,
             ordinal: 1,
-            timestamp: date("2026-08-01T10:02:00Z"),
+            timestamp: try date("2026-08-01T10:02:00Z"),
             normalized: normalized(0.75, 0.5),
             confidence: 0.9,
             source: .corrected,
@@ -130,7 +130,7 @@ final class AnalyticsTests: XCTestCase {
             id: shotID("shot-manual"),
             stringID: stringID,
             ordinal: 2,
-            timestamp: date("2026-08-01T10:03:00Z"),
+            timestamp: try date("2026-08-01T10:03:00Z"),
             normalized: normalized(0.5, 0.5),
             confidence: 0,
             source: .manualAdded,
@@ -140,13 +140,13 @@ final class AnalyticsTests: XCTestCase {
         let deleted = try AcceptedImpact(
             id: shotID("shot-deleted"),
             stringID: stringID,
-            createdAt: date("2026-08-01T10:04:00Z"),
+            createdAt: try date("2026-08-01T10:04:00Z"),
             rawEvidence: try RawImpactEvidence(
                 detectorEventID: "event-deleted",
                 candidateID: "event-deleted",
                 coordinate: normalized(0.9, 0.9),
                 confidence: 0.95,
-                timestamp: date("2026-08-01T10:04:00Z")
+                timestamp: try date("2026-08-01T10:04:00Z")
             ),
             finalCoordinate: normalized(0.9, 0.9),
             state: .deleted,
@@ -155,8 +155,8 @@ final class AnalyticsTests: XCTestCase {
         )
 
         let store = try makeStore(
-            sessions: [session("session-1", startedAt: date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)],
-            strings: [string("string-1", sessionID: sessionID("session-1"), index: 1, startedAt: date("2026-08-01T10:01:00Z"))],
+            sessions: [session("session-1", startedAt: try date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)],
+            strings: [string("string-1", sessionID: sessionID("session-1"), index: 1, startedAt: try date("2026-08-01T10:01:00Z"))],
             shots: [corrected, manual],
             impactCorrectionHistory: [deleted]
         )
@@ -173,14 +173,14 @@ final class AnalyticsTests: XCTestCase {
     func testUnsupportedAndMixedTargetScoresRemainUnavailableInsteadOfZeroOrCombined() throws {
         let store = try makeStore(
             sessions: [
-                session("session-a", startedAt: date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
-                session("session-b", startedAt: date("2026-08-02T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetB),
-                session("session-c", startedAt: date("2026-08-03T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
+                session("session-a", startedAt: try date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
+                session("session-b", startedAt: try date("2026-08-02T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetB),
+                session("session-c", startedAt: try date("2026-08-03T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
             ],
             strings: [
-                string("string-a", sessionID: sessionID("session-a"), index: 1, startedAt: date("2026-08-01T10:01:00Z")),
-                string("string-b", sessionID: sessionID("session-b"), index: 1, startedAt: date("2026-08-02T10:01:00Z")),
-                string("string-c", sessionID: sessionID("session-c"), index: 1, startedAt: date("2026-08-03T10:01:00Z"))
+                string("string-a", sessionID: sessionID("session-a"), index: 1, startedAt: try date("2026-08-01T10:01:00Z")),
+                string("string-b", sessionID: sessionID("session-b"), index: 1, startedAt: try date("2026-08-02T10:01:00Z")),
+                string("string-c", sessionID: sessionID("session-c"), index: 1, startedAt: try date("2026-08-03T10:01:00Z"))
             ],
             shots: [
                 shot("shot-a", stringID: stringID("string-a"), ordinal: 1, physical: point(0, 0), score: 10),
@@ -203,7 +203,7 @@ final class AnalyticsTests: XCTestCase {
 
     func testEmptyFilterResultIsStructuredAndNonNumericMetricsAreUnavailable() throws {
         let store = try makeStore(
-            sessions: [session("session-1", startedAt: date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)],
+            sessions: [session("session-1", startedAt: try date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)],
             strings: [],
             shots: []
         )
@@ -224,12 +224,12 @@ final class AnalyticsTests: XCTestCase {
     func testTrendIsChronologicalAndHistoryIsReverseChronological() throws {
         let store = try makeStore(
             sessions: [
-                session("later", startedAt: date("2026-08-03T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
-                session("earlier", startedAt: date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
+                session("later", startedAt: try date("2026-08-03T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA),
+                session("earlier", startedAt: try date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)
             ],
             strings: [
-                string("later-string", sessionID: sessionID("later"), index: 1, startedAt: date("2026-08-03T10:01:00Z")),
-                string("earlier-string", sessionID: sessionID("earlier"), index: 1, startedAt: date("2026-08-01T10:01:00Z"))
+                string("later-string", sessionID: sessionID("later"), index: 1, startedAt: try date("2026-08-03T10:01:00Z")),
+                string("earlier-string", sessionID: sessionID("earlier"), index: 1, startedAt: try date("2026-08-01T10:01:00Z"))
             ],
             shots: [
                 shot("later-1", stringID: stringID("later-string"), ordinal: 1, physical: point(0, 0), score: nil),
@@ -247,8 +247,8 @@ final class AnalyticsTests: XCTestCase {
 
     func testSingleQualifyingPointDoesNotClaimTrendClassification() throws {
         let store = try makeStore(
-            sessions: [session("session-1", startedAt: date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)],
-            strings: [string("string-1", sessionID: sessionID("session-1"), index: 1, startedAt: date("2026-08-01T10:01:00Z"))],
+            sessions: [session("session-1", startedAt: try date("2026-08-01T10:00:00Z"), firearmID: firearmA, distance: 7, targetID: targetA)],
+            strings: [string("string-1", sessionID: sessionID("session-1"), index: 1, startedAt: try date("2026-08-01T10:01:00Z"))],
             shots: [
                 shot("shot-1", stringID: stringID("string-1"), ordinal: 1, physical: point(0, 0), score: nil),
                 shot("shot-2", stringID: stringID("string-1"), ordinal: 2, physical: point(1, 0), score: nil)
@@ -281,7 +281,7 @@ final class AnalyticsTests: XCTestCase {
                     category: .handgun,
                     caliber: "9mm",
                     notes: nil,
-                    createdAt: date("2026-01-01T00:00:00Z")
+                    createdAt: try date("2026-01-01T00:00:00Z")
                 ),
                 FirearmProfile(
                     id: firearmB,
@@ -289,7 +289,7 @@ final class AnalyticsTests: XCTestCase {
                     category: .handgun,
                     caliber: nil,
                     notes: nil,
-                    createdAt: date("2026-01-01T00:00:00Z")
+                    createdAt: try date("2026-01-01T00:00:00Z")
                 )
             ],
             targetDefinitions: [
@@ -375,7 +375,7 @@ final class AnalyticsTests: XCTestCase {
             id: shotID(rawID),
             stringID: stringID,
             ordinal: ordinal,
-            timestamp: date("2026-08-01T10:00:00Z").addingTimeInterval(Double(ordinal)),
+            timestamp: try date("2026-08-01T10:00:00Z").addingTimeInterval(Double(ordinal)),
             normalized: normalized,
             physical: physical,
             confidence: 0.9,
