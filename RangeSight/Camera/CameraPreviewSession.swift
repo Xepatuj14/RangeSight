@@ -5,10 +5,16 @@ public enum LiveCameraFrameConversionError: Error, Equatable, Sendable {
     case unsupportedPixelFormat
     case invalidPlane
     case invalidDimensions
+    case invalidROI
+    case targetTooSmallForReliableAnalysis
 }
 
 public enum LiveCameraFrameConverter {
-    public static func luminanceFrame(from pixelBuffer: CVPixelBuffer) throws -> LuminanceFrame {
+    public static func luminanceFrame(
+        from pixelBuffer: CVPixelBuffer,
+        region: PixelRegion? = nil,
+        downsampleFactor: Int = 1
+    ) throws -> LuminanceFrame {
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer {
             CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly)
@@ -16,9 +22,12 @@ public enum LiveCameraFrameConverter {
 
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
-        guard width > 0, height > 0 else {
+        guard width > 0, height > 0, downsampleFactor > 0 else {
             throw LiveCameraFrameConversionError.invalidDimensions
         }
+        let sourceRegion = try validatedRegion(region, sourceWidth: width, sourceHeight: height)
+        let outputWidth = max(1, sourceRegion.width / downsampleFactor)
+        let outputHeight = max(1, sourceRegion.height / downsampleFactor)
 
         let pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer)
         switch pixelFormat {
@@ -32,16 +41,18 @@ public enum LiveCameraFrameConverter {
             let bytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0)
             let buffer = baseAddress.assumingMemoryBound(to: UInt8.self)
             var pixels: [Double] = []
-            pixels.reserveCapacity(width * height)
+            pixels.reserveCapacity(outputWidth * outputHeight)
 
-            for y in 0..<height {
-                let row = buffer.advanced(by: y * bytesPerRow)
-                for x in 0..<width {
-                    pixels.append(Double(row[x]) / 255.0)
+            for outputY in 0..<outputHeight {
+                let sourceY = min(sourceRegion.y + outputY * downsampleFactor, sourceRegion.maxYExclusive - 1)
+                let row = buffer.advanced(by: sourceY * bytesPerRow)
+                for outputX in 0..<outputWidth {
+                    let sourceX = min(sourceRegion.x + outputX * downsampleFactor, sourceRegion.maxXExclusive - 1)
+                    pixels.append(Double(row[sourceX]) / 255.0)
                 }
             }
 
-            return try LuminanceFrame(width: width, height: height, pixels: pixels)
+            return try LuminanceFrame(width: outputWidth, height: outputHeight, pixels: pixels)
 
         case kCVPixelFormatType_32BGRA:
             guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else {
@@ -51,12 +62,14 @@ public enum LiveCameraFrameConverter {
             let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
             let buffer = baseAddress.assumingMemoryBound(to: UInt8.self)
             var pixels: [Double] = []
-            pixels.reserveCapacity(width * height)
+            pixels.reserveCapacity(outputWidth * outputHeight)
 
-            for y in 0..<height {
-                let row = buffer.advanced(by: y * bytesPerRow)
-                for x in 0..<width {
-                    let offset = x * 4
+            for outputY in 0..<outputHeight {
+                let sourceY = min(sourceRegion.y + outputY * downsampleFactor, sourceRegion.maxYExclusive - 1)
+                let row = buffer.advanced(by: sourceY * bytesPerRow)
+                for outputX in 0..<outputWidth {
+                    let sourceX = min(sourceRegion.x + outputX * downsampleFactor, sourceRegion.maxXExclusive - 1)
+                    let offset = sourceX * 4
                     let blue = Double(row[offset])
                     let green = Double(row[offset + 1])
                     let red = Double(row[offset + 2])
@@ -64,11 +77,30 @@ public enum LiveCameraFrameConverter {
                 }
             }
 
-            return try LuminanceFrame(width: width, height: height, pixels: pixels)
+            return try LuminanceFrame(width: outputWidth, height: outputHeight, pixels: pixels)
 
         default:
             throw LiveCameraFrameConversionError.unsupportedPixelFormat
         }
+    }
+
+    private static func validatedRegion(
+        _ region: PixelRegion?,
+        sourceWidth: Int,
+        sourceHeight: Int
+    ) throws -> PixelRegion {
+        guard let region else {
+            return try PixelRegion(x: 0, y: 0, width: sourceWidth, height: sourceHeight)
+        }
+
+        guard region.x >= 0,
+              region.y >= 0,
+              region.maxXExclusive <= sourceWidth,
+              region.maxYExclusive <= sourceHeight else {
+            throw LiveCameraFrameConversionError.invalidROI
+        }
+
+        return region
     }
 }
 
@@ -80,10 +112,13 @@ public final class CameraPreviewSession: NSObject, AVCaptureVideoDataOutputSampl
     private var isConfigured = false
     private var liveFrameHandler: (@Sendable (VisionFrame) -> Void)?
     private var liveAnalysisConfiguration: LiveAnalysisConfiguration = .default
+    private var performanceConfiguration: LivePerformanceConfiguration = .default
+    private var targetLockAssessment: TargetLockAssessment?
+    private var scheduler = LiveAnalysisScheduler()
+    private var rollingMetrics: RollingPerformanceMetrics?
     private var analysisSequenceIndex = 0
     private var capturedFrameCount = 0
     private var analyzedFrameCount = 0
-    private var droppedAnalysisFrameCount = 0
     private var totalProcessingDuration: TimeInterval = 0
     private var lastDeliveredTimestamp: TimeInterval?
 
@@ -184,14 +219,40 @@ public final class CameraPreviewSession: NSObject, AVCaptureVideoDataOutputSampl
         }
     }
 
+    public func setLivePerformanceConfiguration(_ configuration: LivePerformanceConfiguration) {
+        sessionQueue.async {
+            self.performanceConfiguration = configuration
+            self.scheduler = LiveAnalysisScheduler(configuration: configuration)
+            self.rollingMetrics = try? RollingPerformanceMetrics(capacity: configuration.rollingWindowSize)
+        }
+    }
+
+    public func setTargetLockAssessment(_ assessment: TargetLockAssessment?) {
+        sessionQueue.async {
+            self.targetLockAssessment = assessment
+        }
+    }
+
+    public func endLiveAnalysisSession() {
+        sessionQueue.async {
+            self.scheduler.resetForSessionEnd()
+            self.lastDeliveredTimestamp = nil
+        }
+    }
+
     public func liveAnalysisDiagnostics() -> LiveAnalysisDiagnostics {
         LiveAnalysisDiagnostics(
             capturedFrameCount: capturedFrameCount,
             analyzedFrameCount: analyzedFrameCount,
-            droppedAnalysisFrameCount: droppedAnalysisFrameCount,
-            inFlightTaskCount: 0,
-            averageProcessingDuration: analyzedFrameCount > 0 ? totalProcessingDuration / Double(analyzedFrameCount) : 0,
-            registrationFailureCount: 0
+            droppedAnalysisFrameCount: scheduler.dropCounters.totalDroppedFrameCount,
+            inFlightTaskCount: scheduler.inFlightAnalysisCount,
+            averageProcessingDuration: rollingMetrics?.averageProcessingDuration ?? 0,
+            registrationFailureCount: scheduler.dropCounters.registrationRejectedFrameCount,
+            cadenceDroppedFrameCount: scheduler.dropCounters.cadenceDroppedFrameCount,
+            backpressureDroppedFrameCount: scheduler.dropCounters.backpressureDroppedFrameCount,
+            invalidROIFrameCount: scheduler.dropCounters.invalidROIFrameCount,
+            globalChangeRejectedFrameCount: scheduler.dropCounters.globalChangeRejectedFrameCount,
+            rollingHighWaterProcessingDuration: rollingMetrics?.rollingHighWaterDuration ?? 0
         )
     }
 
@@ -208,16 +269,39 @@ public final class CameraPreviewSession: NSObject, AVCaptureVideoDataOutputSampl
             let processingStart = CFAbsoluteTimeGetCurrent()
             let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
             capturedFrameCount += 1
-
-            if liveAnalysisConfiguration.allowsStaleFrameDropping,
-               let lastDeliveredTimestamp,
-               timestamp.isFinite,
-               timestamp - lastDeliveredTimestamp < liveAnalysisConfiguration.minimumFrameInterval {
-                droppedAnalysisFrameCount += 1
+            let powerDecision = ThermalPowerPolicy.decision(
+                for: RuntimePowerState(
+                    thermalState: Self.currentThermalState(),
+                    lowPowerModeEnabled: ProcessInfo.processInfo.isLowPowerModeEnabled
+                ),
+                configuration: performanceConfiguration
+            )
+            guard powerDecision.mode != .paused else {
+                scheduler.recordDrop(.backpressure)
                 return
             }
+            let cadence = max(liveAnalysisConfiguration.minimumFrameInterval, powerDecision.analysisCadence)
+            let decision = scheduler.submitFrame(
+                timestamp: timestamp.isFinite ? timestamp : 0,
+                minimumFrameInterval: liveAnalysisConfiguration.allowsStaleFrameDropping ? cadence : 0
+            )
+            guard decision.shouldAnalyze else {
+                return
+            }
+            defer {
+                scheduler.finishFrame()
+            }
 
-            let luminance = try LiveCameraFrameConverter.luminanceFrame(from: imageBuffer)
+            let sourceDimensions = try FrameDimensions(
+                width: CVPixelBufferGetWidth(imageBuffer),
+                height: CVPixelBufferGetHeight(imageBuffer)
+            )
+            let region = try targetROIRegion(sourceDimensions: sourceDimensions)
+            let luminance = try LiveCameraFrameConverter.luminanceFrame(
+                from: imageBuffer,
+                region: region,
+                downsampleFactor: powerDecision.mode == .reducedResolution ? max(1, performanceConfiguration.downsampleFactor) : 1
+            )
             let frame = try VisionFrame(
                 sequenceIndex: analysisSequenceIndex,
                 timestamp: timestamp.isFinite && timestamp >= 0 ? timestamp : 0,
@@ -228,16 +312,68 @@ public final class CameraPreviewSession: NSObject, AVCaptureVideoDataOutputSampl
             analysisSequenceIndex += 1
             analyzedFrameCount += 1
             totalProcessingDuration += CFAbsoluteTimeGetCurrent() - processingStart
+            if rollingMetrics == nil {
+                rollingMetrics = try? RollingPerformanceMetrics(capacity: performanceConfiguration.rollingWindowSize)
+            }
+            rollingMetrics?.record(
+                try StageTimingSample(
+                    stage: .pixelBufferROIConversion,
+                    duration: CFAbsoluteTimeGetCurrent() - processingStart
+                )
+            )
+            rollingMetrics?.record(
+                try StageTimingSample(
+                    stage: .totalAnalysis,
+                    duration: CFAbsoluteTimeGetCurrent() - processingStart
+                )
+            )
             lastDeliveredTimestamp = frame.timestamp
             liveFrameHandler?(frame)
+        } catch LiveCameraFrameConversionError.invalidROI,
+                PerformanceValidationError.invalidROI,
+                PerformanceValidationError.targetTooSmallForReliableAnalysis,
+                LiveCameraFrameConversionError.targetTooSmallForReliableAnalysis {
+            scheduler.recordDrop(.invalidROI)
+            return
         } catch {
             return
         }
+    }
+
+    private func targetROIRegion(sourceDimensions: FrameDimensions) throws -> PixelRegion? {
+        guard let targetLockAssessment else {
+            return nil
+        }
+
+        guard targetLockAssessment.canLock else {
+            throw PerformanceValidationError.invalidROI
+        }
+
+        return try TargetROIMapper.pixelRegion(
+            for: targetLockAssessment.quadrilateral,
+            sourceDimensions: sourceDimensions,
+            minimumDimensions: performanceConfiguration.minimumROIDimensions
+        )
     }
 
     private static func preferredBackCamera() -> AVCaptureDevice? {
         AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back)
             ?? AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back)
             ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+    }
+
+    private static func currentThermalState() -> DeviceThermalState {
+        switch ProcessInfo.processInfo.thermalState {
+        case .nominal:
+            return .nominal
+        case .fair:
+            return .fair
+        case .serious:
+            return .serious
+        case .critical:
+            return .critical
+        @unknown default:
+            return .serious
+        }
     }
 }

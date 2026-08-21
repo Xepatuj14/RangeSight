@@ -52,6 +52,8 @@
 		2A000001000000000000002B /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102B /* AudioCaptureService.swift */; };
 		2A000001000000000000002C /* AudioAssistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102C /* AudioAssistTests.swift */; };
 		2A000001000000000000002D /* AnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102D /* AnalyticsTests.swift */; };
+		2A000001000000000000002E /* PerformanceBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102E /* PerformanceBoundary.swift */; };
+		2A000001000000000000002F /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102F /* PerformanceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -128,6 +130,8 @@
 		2A000001000000000000102B /* AudioCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
 		2A000001000000000000102C /* AudioAssistTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAssistTests.swift; sourceTree = "<group>"; };
 		2A000001000000000000102D /* AnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsTests.swift; sourceTree = "<group>"; };
+		2A000001000000000000102E /* PerformanceBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceBoundary.swift; sourceTree = "<group>"; };
+		2A000001000000000000102F /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -183,6 +187,7 @@
 				2A000001000000000000700A /* Scoring */,
 				2A000001000000000000700B /* Persistence */,
 				2A000001000000000000700C /* Analytics */,
+				2A0000010000000000007014 /* Performance */,
 				2A000001000000000000700D /* Replay */,
 			);
 			path = RangeSight;
@@ -289,6 +294,14 @@
 			path = Replay;
 			sourceTree = "<group>";
 		};
+		2A0000010000000000007014 /* Performance */ = {
+			isa = PBXGroup;
+			children = (
+				2A000001000000000000102E /* PerformanceBoundary.swift */,
+			);
+			path = Performance;
+			sourceTree = "<group>";
+		};
 		2A0000010000000000007010 /* RangeSightTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -305,6 +318,7 @@
 				2A000001000000000000102A /* FrameChangeDetectionTests.swift */,
 				2A000001000000000000102C /* AudioAssistTests.swift */,
 				2A000001000000000000102D /* AnalyticsTests.swift */,
+				2A000001000000000000102F /* PerformanceTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -475,6 +489,7 @@
 				2A000001000000000000001B /* PersistedRangeSightStore.swift in Sources */,
 				2A000001000000000000001C /* LocalRangeSightRepository.swift in Sources */,
 				2A000001000000000000000C /* AnalyticsBoundary.swift in Sources */,
+				2A000001000000000000002E /* PerformanceBoundary.swift in Sources */,
 				2A000001000000000000000D /* ReplayBoundary.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -496,6 +511,7 @@
 				2A000001000000000000002A /* FrameChangeDetectionTests.swift in Sources */,
 				2A000001000000000000002C /* AudioAssistTests.swift in Sources */,
 				2A000001000000000000002D /* AnalyticsTests.swift in Sources */,
+				2A000001000000000000002F /* PerformanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1141,6 +1141,11 @@ public struct LiveAnalysisDiagnostics: Codable, Equatable, Sendable {
     public let inFlightTaskCount: Int
     public let averageProcessingDuration: TimeInterval
     public let registrationFailureCount: Int
+    public let cadenceDroppedFrameCount: Int
+    public let backpressureDroppedFrameCount: Int
+    public let invalidROIFrameCount: Int
+    public let globalChangeRejectedFrameCount: Int
+    public let rollingHighWaterProcessingDuration: TimeInterval
 
     public init(
         capturedFrameCount: Int = 0,
@@ -1148,7 +1153,12 @@ public struct LiveAnalysisDiagnostics: Codable, Equatable, Sendable {
         droppedAnalysisFrameCount: Int = 0,
         inFlightTaskCount: Int = 0,
         averageProcessingDuration: TimeInterval = 0,
-        registrationFailureCount: Int = 0
+        registrationFailureCount: Int = 0,
+        cadenceDroppedFrameCount: Int = 0,
+        backpressureDroppedFrameCount: Int = 0,
+        invalidROIFrameCount: Int = 0,
+        globalChangeRejectedFrameCount: Int = 0,
+        rollingHighWaterProcessingDuration: TimeInterval = 0
     ) {
         self.capturedFrameCount = capturedFrameCount
         self.analyzedFrameCount = analyzedFrameCount
@@ -1156,6 +1166,11 @@ public struct LiveAnalysisDiagnostics: Codable, Equatable, Sendable {
         self.inFlightTaskCount = inFlightTaskCount
         self.averageProcessingDuration = averageProcessingDuration
         self.registrationFailureCount = registrationFailureCount
+        self.cadenceDroppedFrameCount = cadenceDroppedFrameCount
+        self.backpressureDroppedFrameCount = backpressureDroppedFrameCount
+        self.invalidROIFrameCount = invalidROIFrameCount
+        self.globalChangeRejectedFrameCount = globalChangeRejectedFrameCount
+        self.rollingHighWaterProcessingDuration = rollingHighWaterProcessingDuration
     }
 }
 
@@ -1699,6 +1714,11 @@ public enum LiveImpactDiagnostics {
         append("liveInFlightTaskCount", Double(metrics.inFlightTaskCount), to: &diagnostics)
         append("liveAverageProcessingDuration", metrics.averageProcessingDuration, to: &diagnostics)
         append("liveRegistrationFailureCount", Double(metrics.registrationFailureCount), to: &diagnostics)
+        append("liveCadenceDroppedFrameCount", Double(metrics.cadenceDroppedFrameCount), to: &diagnostics)
+        append("liveBackpressureDroppedFrameCount", Double(metrics.backpressureDroppedFrameCount), to: &diagnostics)
+        append("liveInvalidROIFrameCount", Double(metrics.invalidROIFrameCount), to: &diagnostics)
+        append("liveGlobalChangeRejectedFrameCount", Double(metrics.globalChangeRejectedFrameCount), to: &diagnostics)
+        append("liveRollingHighWaterProcessingDuration", metrics.rollingHighWaterProcessingDuration, to: &diagnostics)
         return diagnostics
     }
 
