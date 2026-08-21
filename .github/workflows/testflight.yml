@@ -148,6 +148,19 @@ jobs:
 
           echo "ASC_KEY_PATH=$ASC_KEY_PATH" >> "$GITHUB_ENV"
 
+      - name: Inspect Release signing settings
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          xcodebuild -showBuildSettings \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            RANGESIGHT_DEVELOPMENT_TEAM="$TEAM_ID" \
+            RANGESIGHT_APP_PROFILE_NAME="$PROFILE_NAME" \
+            | grep -E '^[[:space:]]*(CODE_SIGN_IDENTITY|CODE_SIGN_STYLE|DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER|PROVISIONING_PROFILE_SPECIFIER|RANGESIGHT_) = '
+
       - name: Archive Release build
         shell: bash
         run: |
@@ -165,9 +178,8 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            RANGESIGHT_DEVELOPMENT_TEAM="$TEAM_ID" \
+            RANGESIGHT_APP_PROFILE_NAME="$PROFILE_NAME" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
 
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
@@ -178,12 +190,14 @@ jobs:
           set -euo pipefail
 
           APP_PATH="$ARCHIVE_PATH/Products/Applications/RangeSight.app"
+          FRAMEWORK_PATH="$APP_PATH/Frameworks/RangeSightCore.framework"
           INFO_PLIST="$APP_PATH/Info.plist"
           EMBEDDED_PROFILE="$APP_PATH/embedded.mobileprovision"
           ARCHIVE_PROFILE_PLIST="$RUNNER_TEMP/archive-embedded-profile.plist"
 
           test -d "$ARCHIVE_PATH"
           test -d "$APP_PATH"
+          test -d "$FRAMEWORK_PATH"
           test -f "$INFO_PLIST"
           test -f "$EMBEDDED_PROFILE"
 
@@ -216,6 +230,8 @@ jobs:
           fi
 
           codesign -dv "$APP_PATH" 2>&1 | sed -n '/Authority=/p;/TeamIdentifier=/p'
+          codesign --verify --strict "$FRAMEWORK_PATH"
+          codesign -dv "$FRAMEWORK_PATH" 2>&1 | sed -n '/Authority=/p;/TeamIdentifier=/p'
           echo "Verified app bundle ID: $ACTUAL_BUNDLE_ID"
           echo "Verified app version: $ACTUAL_VERSION"
           echo "Verified app build: $ACTUAL_BUILD"
