@@ -246,12 +246,12 @@ public struct AudioImpulseRingBuffer: Codable, Equatable, Sendable {
     ) {
         self.configuration = configuration
         self.candidates = candidates
-        trim(around: candidates.last?.timestamp ?? 0)
+        trim()
     }
 
     public mutating func append(_ candidate: AudioImpulseCandidate) {
         candidates.append(candidate)
-        trim(around: candidate.timestamp)
+        trim()
     }
 
     public func candidatesSupportingVisualEvent(at timestamp: TimeInterval) -> [AudioImpulseCandidate] {
@@ -271,10 +271,8 @@ public struct AudioImpulseRingBuffer: Codable, Equatable, Sendable {
         }
     }
 
-    private mutating func trim(around timestamp: TimeInterval) {
-        let earliest = timestamp - configuration.preEventBufferDuration - configuration.postEventVisualWindowDuration
+    private mutating func trim() {
         candidates = candidates
-            .filter { $0.timestamp >= earliest }
             .sorted { lhs, rhs in
                 if lhs.timestamp == rhs.timestamp {
                     return lhs.id < rhs.id

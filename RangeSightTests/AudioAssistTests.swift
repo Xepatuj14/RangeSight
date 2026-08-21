@@ -43,18 +43,21 @@ final class AudioAssistTests: XCTestCase {
         let configuration = try AudioAssistConfiguration(
             preEventBufferDuration: 0.1,
             postEventVisualWindowDuration: 0.2,
-            maximumBufferedEventCount: 3
+            maximumBufferedEventCount: 6
         )
         var buffer = AudioImpulseRingBuffer(configuration: configuration)
         let old = try candidate(id: "old", timestamp: 1)
-        let near = try candidate(id: "near", timestamp: 1.9, strength: 1.1)
+        let before = try candidate(id: "before", timestamp: 1.89)
+        let start = try candidate(id: "start", timestamp: 1.9)
+        let near = try candidate(id: "near", timestamp: 1.95, strength: 1.1)
         let strong = try candidate(id: "strong", timestamp: 2.05, strength: 2.0)
-        let late = try candidate(id: "late", timestamp: 2.4)
+        let end = try candidate(id: "end", timestamp: 2.2)
+        let after = try candidate(id: "after", timestamp: 2.21)
 
-        [old, near, strong, late].forEach { buffer.append($0) }
+        [old, before, start, near, strong, end, after].forEach { buffer.append($0) }
 
-        XCTAssertEqual(buffer.candidates.map(\.id), ["near", "strong", "late"])
-        XCTAssertEqual(buffer.candidatesSupportingVisualEvent(at: 2).map(\.id), ["near", "strong"])
+        XCTAssertEqual(buffer.candidates.map(\.id), ["before", "start", "near", "strong", "end", "after"])
+        XCTAssertEqual(buffer.candidatesSupportingVisualEvent(at: 2).map(\.id), ["start", "near", "strong", "end"])
         XCTAssertEqual(buffer.strongestCandidateSupportingVisualEvent(at: 2)?.id, "strong")
     }
 
