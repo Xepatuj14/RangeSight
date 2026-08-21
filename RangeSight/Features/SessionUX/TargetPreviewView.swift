@@ -33,79 +33,233 @@ struct TargetPreviewView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.black)
-                .aspectRatio(0.74, contentMode: .fit)
-
-            GeometryReader { proxy in
-                let side = min(proxy.size.width * 0.72, proxy.size.height * 0.78)
-                let originX = (proxy.size.width - side) / 2
-                let originY = (proxy.size.height - side) / 2
-
-                ZStack {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(.sRGB, red: 0.91, green: 0.90, blue: 0.86, opacity: 1))
-                    Circle()
-                        .stroke(Color.black, lineWidth: 18)
-                        .frame(width: side * 0.58, height: side * 0.58)
-                    Circle()
-                        .fill(Color.yellow)
-                        .frame(width: 10, height: 10)
-
-                    ForEach(shots) { shot in
-                        Button {
-                            onShotSelected(shot.id)
-                        } label: {
-                            ShotMarkerView(shot: shot, isSelected: shot.id == selectedShotID)
-                        }
-                        .buttonStyle(.plain)
-                            .position(
-                                x: shot.normalized.x * side,
-                                y: shot.normalized.y * side
-                            )
-                    }
-
-                    ForEach(candidates) { candidate in
-                        Button {
-                            onCandidateSelected(candidate.id)
-                        } label: {
-                            CandidateMarkerView(candidate: candidate, isSelected: candidate.id == selectedCandidateID)
-                        }
-                        .buttonStyle(.plain)
-                            .position(
-                                x: candidate.normalized.x * side,
-                                y: candidate.normalized.y * side
-                            )
-                    }
-                }
-                .frame(width: side, height: side)
-                .position(x: originX + side / 2, y: originY + side / 2)
-                .contentShape(Rectangle())
-                .gesture(
-                    SpatialTapGesture()
-                        .onEnded { value in
-                            guard let coordinate = try? TargetDisplayGeometry(
-                                containerWidth: side,
-                                containerHeight: side
-                            ).normalizedCoordinate(at: DisplayPoint(x: value.location.x, y: value.location.y)) else {
-                                return
-                            }
-
-                            if let coordinate {
-                                onTargetTapped(coordinate)
-                            }
-                        }
-                )
-            }
-            .padding(16)
-
-            Text(status.uppercased())
-                .font(.caption.bold())
-                .foregroundStyle(.yellow)
-                .padding(.bottom, 16)
+            TargetPreviewBackground()
+            TargetPreviewGeometryView(
+                shots: shots,
+                candidates: candidates,
+                selectedShotID: selectedShotID,
+                selectedCandidateID: selectedCandidateID,
+                onShotSelected: onShotSelected,
+                onCandidateSelected: onCandidateSelected,
+                onTargetTapped: onTargetTapped
+            )
+            StatusBadge(text: status)
         }
         .frame(minHeight: 360)
         .accessibilityLabel("Mock target preview")
+    }
+}
+
+private struct TargetPreviewBackground: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .fill(Color.black)
+            .aspectRatio(0.74, contentMode: .fit)
+    }
+}
+
+private struct TargetPreviewGeometryView: View {
+    let shots: [MockShotMarker]
+    let candidates: [MockImpactCandidateMarker]
+    let selectedShotID: Int?
+    let selectedCandidateID: String?
+    let onShotSelected: (Int) -> Void
+    let onCandidateSelected: (String) -> Void
+    let onTargetTapped: (NormalizedTargetCoordinate) -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            let layout = TargetPreviewLayout(size: proxy.size)
+
+            TargetSurfaceView(
+                shots: shots,
+                candidates: candidates,
+                selectedShotID: selectedShotID,
+                selectedCandidateID: selectedCandidateID,
+                side: layout.side,
+                onShotSelected: onShotSelected,
+                onCandidateSelected: onCandidateSelected,
+                onTargetTapped: onTargetTapped
+            )
+            .frame(width: layout.side, height: layout.side)
+            .position(x: layout.centerX, y: layout.centerY)
+        }
+        .padding(16)
+    }
+}
+
+private struct TargetPreviewLayout {
+    let side: CGFloat
+    let centerX: CGFloat
+    let centerY: CGFloat
+
+    init(size: CGSize) {
+        side = min(size.width * 0.72, size.height * 0.78)
+        centerX = size.width / 2
+        centerY = size.height / 2
+    }
+}
+
+private struct TargetSurfaceView: View {
+    let shots: [MockShotMarker]
+    let candidates: [MockImpactCandidateMarker]
+    let selectedShotID: Int?
+    let selectedCandidateID: String?
+    let side: CGFloat
+    let onShotSelected: (Int) -> Void
+    let onCandidateSelected: (String) -> Void
+    let onTargetTapped: (NormalizedTargetCoordinate) -> Void
+
+    var body: some View {
+        ZStack {
+            TargetFaceView(side: side)
+            ConfirmedImpactMarkerLayer(
+                shots: shots,
+                selectedShotID: selectedShotID,
+                side: side,
+                onShotSelected: onShotSelected
+            )
+            MediumCandidateMarkerLayer(
+                candidates: candidates,
+                selectedCandidateID: selectedCandidateID,
+                side: side,
+                onCandidateSelected: onCandidateSelected
+            )
+        }
+        .contentShape(Rectangle())
+        .gesture(targetTapGesture)
+    }
+
+    private var targetTapGesture: some Gesture {
+        SpatialTapGesture()
+            .onEnded { value in
+                if let coordinate = normalizedCoordinate(for: value.location) {
+                    onTargetTapped(coordinate)
+                }
+            }
+    }
+
+    private func normalizedCoordinate(for location: CGPoint) -> NormalizedTargetCoordinate? {
+        guard let coordinate = try? TargetDisplayGeometry(
+            containerWidth: Double(side),
+            containerHeight: Double(side)
+        ).normalizedCoordinate(at: DisplayPoint(x: Double(location.x), y: Double(location.y))) else {
+            return nil
+        }
+
+        return coordinate
+    }
+}
+
+private struct TargetFaceView: View {
+    let side: CGFloat
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color(.sRGB, red: 0.91, green: 0.90, blue: 0.86, opacity: 1))
+            Circle()
+                .stroke(Color.black, lineWidth: 18)
+                .frame(width: side * 0.58, height: side * 0.58)
+            Circle()
+                .fill(Color.yellow)
+                .frame(width: 10, height: 10)
+        }
+    }
+}
+
+private struct ConfirmedImpactMarkerLayer: View {
+    let shots: [MockShotMarker]
+    let selectedShotID: Int?
+    let side: CGFloat
+    let onShotSelected: (Int) -> Void
+
+    var body: some View {
+        ForEach(shots) { shot in
+            ConfirmedImpactMarkerButton(
+                shot: shot,
+                isSelected: shot.id == selectedShotID,
+                side: side,
+                onShotSelected: onShotSelected
+            )
+        }
+    }
+}
+
+private struct ConfirmedImpactMarkerButton: View {
+    let shot: MockShotMarker
+    let isSelected: Bool
+    let side: CGFloat
+    let onShotSelected: (Int) -> Void
+
+    var body: some View {
+        Button {
+            onShotSelected(shot.id)
+        } label: {
+            ShotMarkerView(shot: shot, isSelected: isSelected)
+        }
+        .buttonStyle(.plain)
+        .position(markerPosition)
+    }
+
+    private var markerPosition: CGPoint {
+        CGPoint(
+            x: CGFloat(shot.normalized.x) * side,
+            y: CGFloat(shot.normalized.y) * side
+        )
+    }
+}
+
+private struct MediumCandidateMarkerLayer: View {
+    let candidates: [MockImpactCandidateMarker]
+    let selectedCandidateID: String?
+    let side: CGFloat
+    let onCandidateSelected: (String) -> Void
+
+    var body: some View {
+        ForEach(candidates) { candidate in
+            MediumCandidateMarkerButton(
+                candidate: candidate,
+                isSelected: candidate.id == selectedCandidateID,
+                side: side,
+                onCandidateSelected: onCandidateSelected
+            )
+        }
+    }
+}
+
+private struct MediumCandidateMarkerButton: View {
+    let candidate: MockImpactCandidateMarker
+    let isSelected: Bool
+    let side: CGFloat
+    let onCandidateSelected: (String) -> Void
+
+    var body: some View {
+        Button {
+            onCandidateSelected(candidate.id)
+        } label: {
+            CandidateMarkerView(candidate: candidate, isSelected: isSelected)
+        }
+        .buttonStyle(.plain)
+        .position(markerPosition)
+    }
+
+    private var markerPosition: CGPoint {
+        CGPoint(
+            x: CGFloat(candidate.normalized.x) * side,
+            y: CGFloat(candidate.normalized.y) * side
+        )
+    }
+}
+
+private struct StatusBadge: View {
+    let text: String
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(.caption.bold())
+            .foregroundStyle(.yellow)
+            .padding(.bottom, 16)
     }
 }
 
