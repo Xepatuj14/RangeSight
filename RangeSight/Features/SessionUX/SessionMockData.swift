@@ -8,7 +8,7 @@ struct MockShotMarker: Identifiable, Equatable {
     let confidence: Double
     let source: ShotSource
 
-    func moved(to coordinate: NormalizedTargetCoordinate) -> MockShotMarker {
+    func moved(to coordinate: NormalizedTargetCoordinate, score: Int) -> MockShotMarker {
         MockShotMarker(
             id: id,
             normalized: coordinate,
@@ -57,30 +57,30 @@ struct MockRangeSessionData: Equatable {
     let history: [MockHistorySession]
 
     static let sample = MockRangeSessionData(
-        targetName: "USPSA Practice Paper",
+        targetName: "RangeSight 8 in Bullseye Practice",
         distance: "7 yd",
         firearm: "Range 9",
         shotCount: 5,
-        latestScore: "A",
+        latestScore: "10",
         groupSize: "2.4 in",
         status: "Monitoring",
         qualityStatus: "Target ready",
         shots: [
-            MockShotMarker(id: 1, normalized: coordinate(x: 0.48, y: 0.52), score: 5, confidence: 0.93, source: .autoConfirmed),
-            MockShotMarker(id: 2, normalized: coordinate(x: 0.56, y: 0.47), score: 5, confidence: 0.91, source: .autoConfirmed),
-            MockShotMarker(id: 3, normalized: coordinate(x: 0.51, y: 0.44), score: 5, confidence: 0.88, source: .userConfirmed),
-            MockShotMarker(id: 4, normalized: coordinate(x: 0.44, y: 0.58), score: 3, confidence: 0.79, source: .userConfirmed),
-            MockShotMarker(id: 5, normalized: coordinate(x: 0.53, y: 0.55), score: 5, confidence: 0.95, source: .autoConfirmed)
+            MockShotMarker(id: 1, normalized: coordinate(x: 0.48, y: 0.52), score: 10, confidence: 0.93, source: .autoConfirmed),
+            MockShotMarker(id: 2, normalized: coordinate(x: 0.56, y: 0.47), score: 10, confidence: 0.91, source: .autoConfirmed),
+            MockShotMarker(id: 3, normalized: coordinate(x: 0.72, y: 0.50), score: 8, confidence: 0.88, source: .userConfirmed),
+            MockShotMarker(id: 4, normalized: coordinate(x: 0.86, y: 0.50), score: 6, confidence: 0.79, source: .userConfirmed),
+            MockShotMarker(id: 5, normalized: coordinate(x: 0.50, y: 0.24), score: 8, confidence: 0.95, source: .autoConfirmed)
         ],
         candidates: [
             MockImpactCandidateMarker(id: "candidate-1", normalized: coordinate(x: 0.62, y: 0.40), confidence: 0.72)
         ],
         summaries: [
-            MockStringSummary(id: "string-1", title: "String 1", shots: 5, score: 23, groupSize: "2.4 in"),
-            MockStringSummary(id: "string-2", title: "String 2", shots: 5, score: 21, groupSize: "3.1 in")
+            MockStringSummary(id: "string-1", title: "String 1", shots: 5, score: 42, groupSize: "2.4 in"),
+            MockStringSummary(id: "string-2", title: "String 2", shots: 5, score: 38, groupSize: "3.1 in")
         ],
         history: [
-            MockHistorySession(id: "session-1", date: "Today", firearm: "Range 9", distance: "7 yd", target: "USPSA Practice", bestGroup: "2.4 in"),
+            MockHistorySession(id: "session-1", date: "Today", firearm: "Range 9", distance: "7 yd", target: "Bullseye Practice", bestGroup: "2.4 in"),
             MockHistorySession(id: "session-2", date: "Aug 18", firearm: "Range 9", distance: "10 yd", target: "Bullseye", bestGroup: "3.8 in")
         ]
     )

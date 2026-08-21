@@ -21,6 +21,14 @@ struct SessionShellView: View {
         TargetLockPreviewData.assessment(source: targetLockSource)
     }
 
+    private var currentStringScore: Int {
+        editableShots.map(\.score).reduce(0, +)
+    }
+
+    private var latestShotScore: String {
+        editableShots.last.map { "\($0.score)" } ?? "No score"
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -105,7 +113,7 @@ struct SessionShellView: View {
     private var metricStrip: some View {
         HStack(spacing: 12) {
             metric(value: "\(editableShots.count)", label: "Shots")
-            metric(value: data.latestScore, label: "Latest")
+            metric(value: latestShotScore, label: "Latest")
             metric(value: data.groupSize, label: "Group")
         }
         .padding(14)
@@ -216,6 +224,14 @@ struct SessionShellView: View {
             section("Corrections") {
                 correctionControls
             }
+            section("Scoring") {
+                row(title: "Target", value: data.targetName)
+                row(title: "Accepted shots", value: "\(editableShots.count)")
+                row(title: "Total score", value: "\(currentStringScore)")
+                ForEach(editableShots) { shot in
+                    row(title: "Shot \(shot.id)", value: "\(shot.score)")
+                }
+            }
             primaryAction("Save String", systemImage: "checkmark.circle.fill", destination: .sessionSummary)
         }
     }
@@ -324,7 +340,7 @@ struct SessionShellView: View {
                 MockShotMarker(
                     id: nextID,
                     normalized: coordinate,
-                    score: 0,
+                    score: scoreValue(for: coordinate),
                     confidence: 0,
                     source: .manualAdded
                 )
@@ -337,7 +353,7 @@ struct SessionShellView: View {
         if isMovingImpact,
            let selectedShotID,
            let index = editableShots.firstIndex(where: { $0.id == selectedShotID }) {
-            editableShots[index] = editableShots[index].moved(to: coordinate)
+            editableShots[index] = editableShots[index].moved(to: coordinate, score: scoreValue(for: coordinate))
             isMovingImpact = false
         }
     }
@@ -354,7 +370,7 @@ struct SessionShellView: View {
             MockShotMarker(
                 id: nextID,
                 normalized: candidate.normalized,
-                score: 0,
+                score: scoreValue(for: candidate.normalized),
                 confidence: candidate.confidence,
                 source: .userConfirmed
             )
@@ -376,6 +392,12 @@ struct SessionShellView: View {
 
     private var summaryView: some View {
         VStack(alignment: .leading, spacing: 14) {
+            section("Current String") {
+                row(title: "Target", value: data.targetName)
+                row(title: "Accepted shots", value: "\(editableShots.count)")
+                row(title: "Score", value: "\(currentStringScore)")
+                row(title: "Group", value: data.groupSize)
+            }
             ForEach(data.summaries) { summary in
                 section(summary.title) {
                     row(title: "Shots", value: "\(summary.shots)")
@@ -385,6 +407,19 @@ struct SessionShellView: View {
             }
             primaryAction("New String", systemImage: "scope", destination: .cameraSetup)
         }
+    }
+
+    private func scoreValue(for coordinate: NormalizedTargetCoordinate) -> Int {
+        guard let target = SupportedTargetCatalog.scoringTarget(for: SupportedTargetCatalog.bullseyePracticeID),
+              let dimensions = target.physicalDimensions,
+              let score = TargetScoringEngine().score(
+                TargetCoordinateConverter.physicalPoint(from: coordinate, dimensions: dimensions),
+                using: target
+              ) else {
+            return 0
+        }
+
+        return Int(score.value)
     }
 
     private var historyView: some View {

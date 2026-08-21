@@ -16,7 +16,7 @@ public enum TargetCoordinateConverter {
     }
 }
 
-public struct GroupMetrics: Equatable, Sendable {
+public struct GroupMetrics: Codable, Equatable, Sendable {
     public let shotCount: Int
     public let groupCenter: PhysicalPoint
     public let extremeSpread: Double
