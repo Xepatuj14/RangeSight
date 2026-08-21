@@ -312,6 +312,93 @@ final class FrameChangeDetectionTests: XCTestCase {
         XCTAssertTrue(temporalDiagnostics.contains(expectedKnown))
     }
 
+    func testLiveImpactSessionEmitsOrderedConfirmedEvents() throws {
+        var session = LiveImpactSession()
+        session.startString()
+
+        _ = try session.process(liveTemporalResult(frame: 3, candidates: [liveTemporalCandidate(id: "impact-a", frame: 3, x: 0.42, y: 0.51, band: .high, state: .highConfidence)]))
+        let second = try session.process(liveTemporalResult(frame: 6, candidates: [liveTemporalCandidate(id: "impact-b", frame: 6, x: 0.58, y: 0.48, band: .high, state: .highConfidence)]))
+
+        XCTAssertEqual(second.totalEventCount, 2)
+        XCTAssertEqual(session.orderedEvents.map(\.shotIndex), [1, 2])
+        XCTAssertEqual(session.orderedEvents.map(\.temporalCandidateID), ["impact-a", "impact-b"])
+        XCTAssertEqual(session.orderedEvents[0].normalizedCoordinate.x, 0.42, accuracy: 0.000001)
+        XCTAssertEqual(session.orderedEvents[1].normalizedCoordinate.x, 0.58, accuracy: 0.000001)
+    }
+
+    func testLiveImpactSessionSuppressesDuplicateHighCandidateID() throws {
+        var session = LiveImpactSession()
+        session.startString()
+
+        _ = try session.process(liveTemporalResult(frame: 3, candidates: [liveTemporalCandidate(id: "impact-a", frame: 3, x: 0.42, y: 0.51, band: .high, state: .highConfidence)]))
+        let duplicate = try session.process(liveTemporalResult(frame: 4, candidates: [liveTemporalCandidate(id: "impact-a", frame: 4, x: 0.421, y: 0.511, band: .high, state: .highConfidence)]))
+
+        XCTAssertEqual(duplicate.newEvents, [])
+        XCTAssertEqual(session.orderedEvents.count, 1)
+        XCTAssertEqual(session.orderedEvents.first?.shotIndex, 1)
+    }
+
+    func testLiveImpactSessionDoesNotEmitLowConfidenceShot() throws {
+        var session = LiveImpactSession()
+        session.startString()
+
+        let outcome = try session.process(liveTemporalResult(frame: 2, candidates: [liveTemporalCandidate(id: "low-a", frame: 2, x: 0.45, y: 0.5, confidence: 0.42, band: .low, state: .lowConfidence)]))
+
+        XCTAssertEqual(outcome.newEvents, [])
+        XCTAssertEqual(outcome.totalEventCount, 0)
+        XCTAssertEqual(session.orderedEvents, [])
+    }
+
+    func testLiveImpactSessionPreservesMediumCandidateWithoutShot() throws {
+        var session = LiveImpactSession()
+        session.startString()
+
+        let outcome = try session.process(liveTemporalResult(frame: 2, candidates: [liveTemporalCandidate(id: "medium-a", frame: 2, x: 0.45, y: 0.5, confidence: 0.72, band: .medium, state: .mediumConfidence)]))
+
+        XCTAssertEqual(outcome.newEvents, [])
+        XCTAssertEqual(outcome.mediumConfidenceCandidates.count, 1)
+        XCTAssertEqual(outcome.mediumConfidenceCandidates.first?.temporalCandidateID, "medium-a")
+        XCTAssertEqual(session.orderedEvents, [])
+    }
+
+    func testLiveImpactSessionHandlesRegistrationFailureWithoutEvent() throws {
+        var session = LiveImpactSession()
+        session.startString()
+
+        _ = try session.process(liveTemporalResult(frame: 1, candidates: []))
+        let failure = try session.process(liveTemporalResult(frame: 2, candidates: [], skippedFrame: true))
+        let recovered = try session.process(liveTemporalResult(frame: 3, candidates: [liveTemporalCandidate(id: "impact-a", frame: 3, x: 0.42, y: 0.51, band: .high, state: .highConfidence)]))
+
+        XCTAssertEqual(failure.status, .degraded)
+        XCTAssertEqual(failure.newEvents, [])
+        XCTAssertEqual(recovered.newEvents.count, 1)
+        XCTAssertEqual(session.orderedEvents.count, 1)
+    }
+
+    func testLiveImpactSessionIgnoresResultsAfterEndString() throws {
+        var session = LiveImpactSession()
+        session.startString()
+        session.endString()
+
+        let outcome = try session.process(liveTemporalResult(frame: 3, candidates: [liveTemporalCandidate(id: "impact-a", frame: 3, x: 0.42, y: 0.51, band: .high, state: .highConfidence)]))
+
+        XCTAssertEqual(outcome.status, .ended)
+        XCTAssertEqual(outcome.newEvents, [])
+        XCTAssertEqual(session.orderedEvents, [])
+    }
+
+    func testLiveImpactSessionDropsOutOfOrderResults() throws {
+        var session = LiveImpactSession()
+        session.startString()
+
+        _ = try session.process(liveTemporalResult(frame: 5, candidates: []))
+        let old = try session.process(liveTemporalResult(frame: 4, candidates: [liveTemporalCandidate(id: "impact-a", frame: 4, x: 0.42, y: 0.51, band: .high, state: .highConfidence)]))
+
+        XCTAssertTrue(old.droppedOutOfOrderResult)
+        XCTAssertEqual(old.newEvents, [])
+        XCTAssertEqual(session.orderedEvents, [])
+    }
+
     func testReplayHarnessExercisesRegisteredChangeDetectionProcessor() async throws {
         let frames = [
             try frame(index: 0, timestamp: 0, pixels: basePixels(), features: features()),
@@ -614,6 +701,55 @@ final class FrameChangeDetectionTests: XCTestCase {
             magnitude: magnitude,
             contrast: contrast,
             registrationConfidence: registrationConfidence
+        )
+    }
+
+    private func liveTemporalResult(
+        frame: Int,
+        candidates: [TemporalImpactCandidate],
+        skippedFrame: Bool = false
+    ) -> TemporalConfirmationResult {
+        TemporalConfirmationResult(
+            frameSequenceIndex: frame,
+            frameTimestamp: Double(frame) * 0.04,
+            rawCandidateCount: candidates.count,
+            emittedCandidates: candidates,
+            activeTrackCount: 0,
+            knownImpactCount: candidates.filter { $0.state == .highConfidence }.count,
+            skippedFrame: skippedFrame
+        )
+    }
+
+    private func liveTemporalCandidate(
+        id: String,
+        frame: Int,
+        x: Double,
+        y: Double,
+        confidence: Double = 0.93,
+        band: TemporalConfidenceBand,
+        state: TemporalCandidateState
+    ) throws -> TemporalImpactCandidate {
+        try TemporalImpactCandidate(
+            id: id,
+            sourceCandidateID: "source-\(id)",
+            state: state,
+            centroid: try NormalizedImagePoint(x: x, y: y),
+            bounds: try NormalizedImageRegion(
+                minX: max(0, x - 0.01),
+                minY: max(0, y - 0.01),
+                maxX: min(1, x + 0.01),
+                maxY: min(1, y + 0.01)
+            ),
+            firstObservedFrameSequenceIndex: max(0, frame - 2),
+            lastObservedFrameSequenceIndex: frame,
+            firstObservedTimestamp: Double(max(0, frame - 2)) * 0.04,
+            lastObservedTimestamp: Double(frame) * 0.04,
+            observedFrameCount: state == .lowConfidence ? 1 : 3,
+            consecutiveObservationCount: state == .lowConfidence ? 1 : 3,
+            missedFrameCount: 0,
+            maximumCentroidDrift: 0.002,
+            confidence: confidence,
+            confidenceBand: band
         )
     }
 }

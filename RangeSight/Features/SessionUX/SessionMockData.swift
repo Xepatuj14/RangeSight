@@ -9,6 +9,12 @@ struct MockShotMarker: Identifiable, Equatable {
     let source: ShotSource
 }
 
+struct MockImpactCandidateMarker: Identifiable, Equatable {
+    let id: String
+    let normalized: NormalizedTargetCoordinate
+    let confidence: Double
+}
+
 struct MockStringSummary: Identifiable, Equatable {
     let id: String
     let title: String
@@ -36,6 +42,7 @@ struct MockRangeSessionData: Equatable {
     let status: String
     let qualityStatus: String
     let shots: [MockShotMarker]
+    let candidates: [MockImpactCandidateMarker]
     let summaries: [MockStringSummary]
     let history: [MockHistorySession]
 
@@ -54,6 +61,9 @@ struct MockRangeSessionData: Equatable {
             MockShotMarker(id: 3, normalized: coordinate(x: 0.51, y: 0.44), score: 5, confidence: 0.88, source: .userConfirmed),
             MockShotMarker(id: 4, normalized: coordinate(x: 0.44, y: 0.58), score: 3, confidence: 0.79, source: .userConfirmed),
             MockShotMarker(id: 5, normalized: coordinate(x: 0.53, y: 0.55), score: 5, confidence: 0.95, source: .autoConfirmed)
+        ],
+        candidates: [
+            MockImpactCandidateMarker(id: "candidate-1", normalized: coordinate(x: 0.62, y: 0.40), confidence: 0.72)
         ],
         summaries: [
             MockStringSummary(id: "string-1", title: "String 1", shots: 5, score: 23, groupSize: "2.4 in"),

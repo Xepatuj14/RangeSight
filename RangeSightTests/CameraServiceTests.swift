@@ -12,5 +12,6 @@ final class CameraServiceTests: XCTestCase {
     func testCameraSessionFailuresAreEquatable() {
         XCTAssertEqual(CameraSessionFailure.cameraUnavailable, .cameraUnavailable)
         XCTAssertEqual(CameraSessionFailure.cannotAddInput, .cannotAddInput)
+        XCTAssertEqual(CameraSessionFailure.cannotAddOutput, .cannotAddOutput)
     }
 }

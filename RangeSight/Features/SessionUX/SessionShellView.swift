@@ -191,7 +191,7 @@ struct SessionShellView: View {
 
     private var liveMonitorView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TargetPreviewView(shots: data.shots, status: "Monitoring", showsCandidate: true)
+            TargetPreviewView(shots: data.shots, candidates: data.candidates, status: "Monitoring")
             HStack(spacing: 12) {
                 primaryAction("Pause", systemImage: "pause.fill", destination: .cameraSetup)
                 primaryAction("End String", systemImage: "stop.fill", destination: .stringReview)
@@ -201,7 +201,7 @@ struct SessionShellView: View {
 
     private var reviewView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TargetPreviewView(shots: data.shots, status: "Review", showsCandidate: false)
+            TargetPreviewView(shots: data.shots, candidates: [], status: "Review")
             section("Corrections") {
                 row(title: "Candidate", value: "Confirm or ignore")
                 row(title: "Manual add", value: "Available")

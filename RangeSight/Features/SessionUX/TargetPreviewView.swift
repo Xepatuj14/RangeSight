@@ -2,8 +2,8 @@ import SwiftUI
 
 struct TargetPreviewView: View {
     let shots: [MockShotMarker]
+    let candidates: [MockImpactCandidateMarker]
     let status: String
-    let showsCandidate: Bool
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -34,11 +34,12 @@ struct TargetPreviewView: View {
                             )
                     }
 
-                    if showsCandidate {
-                        Circle()
-                            .stroke(Color.orange, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
-                            .frame(width: 34, height: 34)
-                            .position(x: side * 0.62, y: side * 0.40)
+                    ForEach(candidates) { candidate in
+                        CandidateMarkerView(candidate: candidate)
+                            .position(
+                                x: candidate.normalized.x * side,
+                                y: candidate.normalized.y * side
+                            )
                     }
                 }
                 .frame(width: side, height: side)
@@ -53,6 +54,17 @@ struct TargetPreviewView: View {
         }
         .frame(minHeight: 360)
         .accessibilityLabel("Mock target preview")
+    }
+}
+
+private struct CandidateMarkerView: View {
+    let candidate: MockImpactCandidateMarker
+
+    var body: some View {
+        Circle()
+            .stroke(Color.orange, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
+            .frame(width: 34, height: 34)
+            .accessibilityLabel("Candidate impact \(candidate.id)")
     }
 }
 

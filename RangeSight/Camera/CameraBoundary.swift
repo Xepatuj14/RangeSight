@@ -21,4 +21,5 @@ public enum CameraSessionState: Equatable, Sendable {
 public enum CameraSessionFailure: Error, Equatable, Sendable {
     case cameraUnavailable
     case cannotAddInput
+    case cannotAddOutput
 }

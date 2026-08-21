@@ -847,6 +847,249 @@ public struct TemporalConfirmationResult: Codable, Equatable, Sendable {
     public var highConfidenceCandidates: [TemporalImpactCandidate] {
         emittedCandidates.filter { $0.confidenceBand == .high && $0.state == .highConfidence }
     }
+
+    public var mediumConfidenceCandidates: [TemporalImpactCandidate] {
+        emittedCandidates.filter { $0.confidenceBand == .medium && $0.state != .suppressedKnownImpact }
+    }
+}
+
+public enum LiveImpactEventSource: String, Codable, Equatable, Sendable {
+    case automaticVisualConfirmation
+}
+
+public enum LiveMonitoringStatus: String, Codable, Equatable, Sendable {
+    case idle
+    case monitoring
+    case degraded
+    case ended
+}
+
+public struct LiveImpactEvent: Codable, Equatable, Sendable, Identifiable {
+    public let id: String
+    public let shotIndex: Int
+    public let frameSequenceIndex: Int
+    public let timestamp: TimeInterval
+    public let normalizedCoordinate: NormalizedImagePoint
+    public let confidence: Double
+    public let confidenceBand: TemporalConfidenceBand
+    public let temporalCandidateID: String
+    public let source: LiveImpactEventSource
+
+    public init(
+        id: String,
+        shotIndex: Int,
+        frameSequenceIndex: Int,
+        timestamp: TimeInterval,
+        normalizedCoordinate: NormalizedImagePoint,
+        confidence: Double,
+        confidenceBand: TemporalConfidenceBand,
+        temporalCandidateID: String,
+        source: LiveImpactEventSource = .automaticVisualConfirmation
+    ) throws {
+        guard !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !temporalCandidateID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              shotIndex > 0,
+              frameSequenceIndex >= 0,
+              timestamp >= 0,
+              timestamp.isFinite,
+              (0...1).contains(confidence) else {
+            throw LiveImpactEventValidationError.invalidEvent
+        }
+
+        self.id = id
+        self.shotIndex = shotIndex
+        self.frameSequenceIndex = frameSequenceIndex
+        self.timestamp = timestamp
+        self.normalizedCoordinate = normalizedCoordinate
+        self.confidence = confidence
+        self.confidenceBand = confidenceBand
+        self.temporalCandidateID = temporalCandidateID
+        self.source = source
+    }
+}
+
+public struct LiveImpactCandidateSnapshot: Codable, Equatable, Sendable {
+    public let temporalCandidateID: String
+    public let frameSequenceIndex: Int
+    public let timestamp: TimeInterval
+    public let normalizedCoordinate: NormalizedImagePoint
+    public let confidence: Double
+    public let confidenceBand: TemporalConfidenceBand
+}
+
+public struct LiveImpactFrameOutcome: Codable, Equatable, Sendable {
+    public let frameSequenceIndex: Int
+    public let timestamp: TimeInterval
+    public let status: LiveMonitoringStatus
+    public let newEvents: [LiveImpactEvent]
+    public let mediumConfidenceCandidates: [LiveImpactCandidateSnapshot]
+    public let totalEventCount: Int
+    public let droppedOutOfOrderResult: Bool
+}
+
+public struct LiveImpactSession: Sendable {
+    private var status: LiveMonitoringStatus = .idle
+    private var events: [LiveImpactEvent] = []
+    private var emittedTemporalCandidateIDs = Set<String>()
+    private var lastAcceptedFrameSequenceIndex: Int?
+
+    public init() {}
+
+    public var currentStatus: LiveMonitoringStatus {
+        status
+    }
+
+    public var orderedEvents: [LiveImpactEvent] {
+        events
+    }
+
+    public mutating func startString() {
+        status = .monitoring
+        events = []
+        emittedTemporalCandidateIDs = []
+        lastAcceptedFrameSequenceIndex = nil
+    }
+
+    public mutating func endString() {
+        status = .ended
+    }
+
+    public mutating func process(_ temporalResult: TemporalConfirmationResult) throws -> LiveImpactFrameOutcome {
+        guard status == .monitoring else {
+            return LiveImpactFrameOutcome(
+                frameSequenceIndex: temporalResult.frameSequenceIndex,
+                timestamp: temporalResult.frameTimestamp,
+                status: status,
+                newEvents: [],
+                mediumConfidenceCandidates: [],
+                totalEventCount: events.count,
+                droppedOutOfOrderResult: false
+            )
+        }
+
+        if let lastAcceptedFrameSequenceIndex,
+           temporalResult.frameSequenceIndex <= lastAcceptedFrameSequenceIndex {
+            return LiveImpactFrameOutcome(
+                frameSequenceIndex: temporalResult.frameSequenceIndex,
+                timestamp: temporalResult.frameTimestamp,
+                status: status,
+                newEvents: [],
+                mediumConfidenceCandidates: [],
+                totalEventCount: events.count,
+                droppedOutOfOrderResult: true
+            )
+        }
+
+        lastAcceptedFrameSequenceIndex = temporalResult.frameSequenceIndex
+        status = temporalResult.skippedFrame ? .degraded : .monitoring
+        let highCandidates = temporalResult.highConfidenceCandidates.sorted {
+            if $0.lastObservedFrameSequenceIndex == $1.lastObservedFrameSequenceIndex {
+                return $0.id < $1.id
+            }
+
+            return $0.lastObservedFrameSequenceIndex < $1.lastObservedFrameSequenceIndex
+        }
+
+        var newEvents: [LiveImpactEvent] = []
+        for candidate in highCandidates where !emittedTemporalCandidateIDs.contains(candidate.id) {
+            emittedTemporalCandidateIDs.insert(candidate.id)
+            let event = try LiveImpactEvent(
+                id: "live-impact-\(events.count + newEvents.count + 1)",
+                shotIndex: events.count + newEvents.count + 1,
+                frameSequenceIndex: candidate.lastObservedFrameSequenceIndex,
+                timestamp: candidate.lastObservedTimestamp,
+                normalizedCoordinate: candidate.centroid,
+                confidence: candidate.confidence,
+                confidenceBand: candidate.confidenceBand,
+                temporalCandidateID: candidate.id
+            )
+            newEvents.append(event)
+        }
+
+        events.append(contentsOf: newEvents)
+        events.sort {
+            if $0.frameSequenceIndex == $1.frameSequenceIndex {
+                return $0.shotIndex < $1.shotIndex
+            }
+
+            return $0.frameSequenceIndex < $1.frameSequenceIndex
+        }
+
+        let mediumCandidates = temporalResult.mediumConfidenceCandidates.map {
+            LiveImpactCandidateSnapshot(
+                temporalCandidateID: $0.id,
+                frameSequenceIndex: $0.lastObservedFrameSequenceIndex,
+                timestamp: $0.lastObservedTimestamp,
+                normalizedCoordinate: $0.centroid,
+                confidence: $0.confidence,
+                confidenceBand: $0.confidenceBand
+            )
+        }
+
+        return LiveImpactFrameOutcome(
+            frameSequenceIndex: temporalResult.frameSequenceIndex,
+            timestamp: temporalResult.frameTimestamp,
+            status: status,
+            newEvents: newEvents,
+            mediumConfidenceCandidates: mediumCandidates,
+            totalEventCount: events.count,
+            droppedOutOfOrderResult: false
+        )
+    }
+}
+
+public struct LiveAnalysisConfiguration: Codable, Equatable, Sendable {
+    public let minimumFrameInterval: TimeInterval
+    public let allowsStaleFrameDropping: Bool
+    public let maximumConsecutiveSkippedFramesBeforeDegraded: Int
+
+    public init(
+        minimumFrameInterval: TimeInterval = 0.1,
+        allowsStaleFrameDropping: Bool = true,
+        maximumConsecutiveSkippedFramesBeforeDegraded: Int = 3
+    ) throws {
+        guard minimumFrameInterval > 0,
+              minimumFrameInterval.isFinite,
+              maximumConsecutiveSkippedFramesBeforeDegraded >= 0 else {
+            throw LiveImpactEventValidationError.invalidConfiguration
+        }
+
+        self.minimumFrameInterval = minimumFrameInterval
+        self.allowsStaleFrameDropping = allowsStaleFrameDropping
+        self.maximumConsecutiveSkippedFramesBeforeDegraded = maximumConsecutiveSkippedFramesBeforeDegraded
+    }
+
+    public static let `default` = try! LiveAnalysisConfiguration()
+}
+
+public struct LiveAnalysisDiagnostics: Codable, Equatable, Sendable {
+    public let capturedFrameCount: Int
+    public let analyzedFrameCount: Int
+    public let droppedAnalysisFrameCount: Int
+    public let inFlightTaskCount: Int
+    public let averageProcessingDuration: TimeInterval
+    public let registrationFailureCount: Int
+
+    public init(
+        capturedFrameCount: Int = 0,
+        analyzedFrameCount: Int = 0,
+        droppedAnalysisFrameCount: Int = 0,
+        inFlightTaskCount: Int = 0,
+        averageProcessingDuration: TimeInterval = 0,
+        registrationFailureCount: Int = 0
+    ) {
+        self.capturedFrameCount = capturedFrameCount
+        self.analyzedFrameCount = analyzedFrameCount
+        self.droppedAnalysisFrameCount = droppedAnalysisFrameCount
+        self.inFlightTaskCount = inFlightTaskCount
+        self.averageProcessingDuration = averageProcessingDuration
+        self.registrationFailureCount = registrationFailureCount
+    }
+}
+
+public enum LiveImpactEventValidationError: Error, Equatable {
+    case invalidEvent
+    case invalidConfiguration
 }
 
 public struct TemporalImpactConfirmer: Sendable {
@@ -1353,6 +1596,52 @@ public enum TemporalConfirmationDiagnostics {
         case .rejectedTransient: return 6
         case .rejectedUnstable: return 7
         case .suppressedKnownImpact: return 8
+        }
+    }
+}
+
+public enum LiveImpactDiagnostics {
+    public static func diagnostics(for outcome: LiveImpactFrameOutcome) -> [VisionFrameDiagnostic] {
+        var diagnostics: [VisionFrameDiagnostic] = []
+        append("liveImpactNewEventCount", Double(outcome.newEvents.count), to: &diagnostics)
+        append("liveImpactTotalEventCount", Double(outcome.totalEventCount), to: &diagnostics)
+        append("liveImpactMediumCandidateCount", Double(outcome.mediumConfidenceCandidates.count), to: &diagnostics)
+        append("liveImpactStatus", statusCode(outcome.status), to: &diagnostics)
+        append("liveImpactDroppedOutOfOrderResult", outcome.droppedOutOfOrderResult ? 1 : 0, to: &diagnostics)
+
+        if let first = outcome.newEvents.first {
+            append("liveImpactFirstShotIndex", Double(first.shotIndex), to: &diagnostics)
+            append("liveImpactFirstCoordinateX", first.normalizedCoordinate.x, to: &diagnostics)
+            append("liveImpactFirstCoordinateY", first.normalizedCoordinate.y, to: &diagnostics)
+            append("liveImpactFirstConfidence", first.confidence, to: &diagnostics)
+        }
+
+        return diagnostics
+    }
+
+    public static func diagnostics(for metrics: LiveAnalysisDiagnostics) -> [VisionFrameDiagnostic] {
+        var diagnostics: [VisionFrameDiagnostic] = []
+        append("liveCapturedFrameCount", Double(metrics.capturedFrameCount), to: &diagnostics)
+        append("liveAnalyzedFrameCount", Double(metrics.analyzedFrameCount), to: &diagnostics)
+        append("liveDroppedAnalysisFrameCount", Double(metrics.droppedAnalysisFrameCount), to: &diagnostics)
+        append("liveInFlightTaskCount", Double(metrics.inFlightTaskCount), to: &diagnostics)
+        append("liveAverageProcessingDuration", metrics.averageProcessingDuration, to: &diagnostics)
+        append("liveRegistrationFailureCount", Double(metrics.registrationFailureCount), to: &diagnostics)
+        return diagnostics
+    }
+
+    private static func append(_ key: String, _ value: Double, to diagnostics: inout [VisionFrameDiagnostic]) {
+        if let diagnostic = try? VisionFrameDiagnostic(key: key, value: value) {
+            diagnostics.append(diagnostic)
+        }
+    }
+
+    private static func statusCode(_ status: LiveMonitoringStatus) -> Double {
+        switch status {
+        case .idle: return 1
+        case .monitoring: return 2
+        case .degraded: return 3
+        case .ended: return 4
         }
     }
 }
