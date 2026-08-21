@@ -402,6 +402,58 @@ final class FrameChangeDetectionTests: XCTestCase {
         XCTAssertEqual(session.orderedEvents, [])
     }
 
+    func testLiveImpactSessionDoesNotEmitEventForAudioImpulseWithoutVisualChange() throws {
+        var session = LiveImpactSession(audioAssistConfiguration: try AudioAssistConfiguration(preEventBufferDuration: 0.2, postEventVisualWindowDuration: 0.4))
+        session.startString()
+        session.recordAudioImpulse(try audioImpulse(id: "neighbor-lane", timestamp: 1))
+
+        let outcome = try session.process(liveTemporalResult(frame: 10, timestamp: 1.1, candidates: []))
+
+        XCTAssertEqual(session.bufferedAudioImpulses.map(\.id), ["neighbor-lane"])
+        XCTAssertEqual(outcome.newEvents, [])
+        XCTAssertEqual(outcome.totalEventCount, 0)
+        XCTAssertEqual(session.orderedEvents, [])
+    }
+
+    func testLiveImpactSessionAllowsVisualOnlyEventWithoutAudioImpulse() throws {
+        var session = LiveImpactSession(audioAssistConfiguration: try AudioAssistConfiguration(preEventBufferDuration: 0.2, postEventVisualWindowDuration: 0.4))
+        session.startString()
+
+        let outcome = try session.process(
+            liveTemporalResult(
+                frame: 10,
+                timestamp: 1.2,
+                candidates: [liveTemporalCandidate(id: "impact-visual", frame: 10, timestamp: 1.2, x: 0.45, y: 0.52, band: .high, state: .highConfidence)]
+            )
+        )
+
+        XCTAssertEqual(outcome.newEvents.count, 1)
+        XCTAssertFalse(try XCTUnwrap(outcome.newEvents.first).audioAssisted)
+        XCTAssertNil(outcome.newEvents.first?.supportingAudioEventID)
+        XCTAssertEqual(session.orderedEvents.count, 1)
+    }
+
+    func testLiveImpactSessionAttachesMatchedAudioSupportToVisualEvent() throws {
+        var session = LiveImpactSession(audioAssistConfiguration: try AudioAssistConfiguration(preEventBufferDuration: 0.2, postEventVisualWindowDuration: 0.4))
+        session.startString()
+        session.recordAudioImpulse(try audioImpulse(id: "audio-a", timestamp: 1.0, strength: 1.7))
+
+        let outcome = try session.process(
+            liveTemporalResult(
+                frame: 10,
+                timestamp: 1.16,
+                candidates: [liveTemporalCandidate(id: "impact-a", frame: 10, timestamp: 1.16, x: 0.45, y: 0.52, band: .high, state: .highConfidence)]
+            )
+        )
+
+        let event = try XCTUnwrap(outcome.newEvents.first)
+        XCTAssertTrue(event.audioAssisted)
+        XCTAssertEqual(event.supportingAudioEventID, "audio-a")
+        XCTAssertEqual(event.audioImpulseStrength, 1.7)
+        XCTAssertEqual(event.confidenceBand, .high)
+        XCTAssertEqual(event.source, .automaticVisualConfirmation)
+    }
+
     func testReplayHarnessExercisesRegisteredChangeDetectionProcessor() async throws {
         let frames = [
             try frame(index: 0, timestamp: 0, pixels: basePixels(), features: features()),
@@ -581,6 +633,20 @@ final class FrameChangeDetectionTests: XCTestCase {
         )
     }
 
+    private func audioImpulse(id: String, timestamp: TimeInterval, strength: Double = 1) throws -> AudioImpulseCandidate {
+        try AudioImpulseCandidate(
+            id: id,
+            timestamp: timestamp,
+            peakAmplitude: 0.9,
+            rmsEnergy: 0.22,
+            baselineEnergy: 0.02,
+            energyRiseRatio: 11,
+            strength: strength,
+            source: .synthetic,
+            diagnosticReason: .peakAndEnergyRise
+        )
+    }
+
     private func structuredFrame(
         index: Int,
         timestamp: TimeInterval,
@@ -709,12 +775,13 @@ final class FrameChangeDetectionTests: XCTestCase {
 
     private func liveTemporalResult(
         frame: Int,
+        timestamp: TimeInterval? = nil,
         candidates: [TemporalImpactCandidate],
         skippedFrame: Bool = false
     ) -> TemporalConfirmationResult {
         TemporalConfirmationResult(
             frameSequenceIndex: frame,
-            frameTimestamp: Double(frame) * 0.04,
+            frameTimestamp: timestamp ?? Double(frame) * 0.04,
             rawCandidateCount: candidates.count,
             emittedCandidates: candidates,
             activeTrackCount: 0,
@@ -726,6 +793,7 @@ final class FrameChangeDetectionTests: XCTestCase {
     private func liveTemporalCandidate(
         id: String,
         frame: Int,
+        timestamp: TimeInterval? = nil,
         x: Double,
         y: Double,
         confidence: Double = 0.93,
@@ -745,8 +813,8 @@ final class FrameChangeDetectionTests: XCTestCase {
             ),
             firstObservedFrameSequenceIndex: max(0, frame - 2),
             lastObservedFrameSequenceIndex: frame,
-            firstObservedTimestamp: Double(max(0, frame - 2)) * 0.04,
-            lastObservedTimestamp: Double(frame) * 0.04,
+            firstObservedTimestamp: timestamp.map { max(0, $0 - 0.08) } ?? Double(max(0, frame - 2)) * 0.04,
+            lastObservedTimestamp: timestamp ?? Double(frame) * 0.04,
             observedFrameCount: state == .lowConfidence ? 1 : 3,
             consecutiveObservationCount: state == .lowConfidence ? 1 : 3,
             missedFrameCount: 0,

@@ -8,6 +8,7 @@ struct SessionShellView: View {
     @State private var selectedCandidateID: String?
     @State private var isAddingImpact = false
     @State private var isMovingImpact = false
+    @State private var audioAssistEnabled = false
     @State private var editableShots = MockRangeSessionData.sample.shots
     @State private var editableCandidates = MockRangeSessionData.sample.candidates
     private let data = MockRangeSessionData.sample
@@ -198,6 +199,9 @@ struct SessionShellView: View {
     private var liveMonitorView: some View {
         VStack(alignment: .leading, spacing: 14) {
             correctionTargetPreview(status: correctionStatus(defaultStatus: "Monitoring"))
+            section("Audio Assist") {
+                row(title: "Status", value: audioAssistEnabled ? "Listening for impulses" : "Visual only")
+            }
             correctionControls
             HStack(spacing: 12) {
                 primaryAction("Pause", systemImage: "pause.fill", destination: .cameraSetup)
@@ -408,10 +412,20 @@ struct SessionShellView: View {
         VStack(alignment: .leading, spacing: 14) {
             section("Audio") {
                 row(title: "Announcements", value: "Off")
-                row(title: "Audio assist", value: "Available later")
+                Toggle(isOn: $audioAssistEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Audio assist")
+                        Text(audioAssistEnabled ? "Microphone requested when monitoring starts" : "Visual detection remains active")
+                            .font(.caption)
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+                .tint(Theme.accent)
+                row(title: "Shot source", value: "Visual confirmation required")
             }
             section("Privacy") {
                 row(title: "Camera frames", value: "Local")
+                row(title: "Microphone audio", value: "On-device impulse metadata")
                 row(title: "Debug imagery", value: "Off")
             }
         }

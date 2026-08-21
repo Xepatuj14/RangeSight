@@ -874,6 +874,9 @@ public struct LiveImpactEvent: Codable, Equatable, Sendable, Identifiable {
     public let confidenceBand: TemporalConfidenceBand
     public let temporalCandidateID: String
     public let source: LiveImpactEventSource
+    public let audioAssisted: Bool
+    public let supportingAudioEventID: String?
+    public let audioImpulseStrength: Double?
 
     public init(
         id: String,
@@ -884,15 +887,22 @@ public struct LiveImpactEvent: Codable, Equatable, Sendable, Identifiable {
         confidence: Double,
         confidenceBand: TemporalConfidenceBand,
         temporalCandidateID: String,
-        source: LiveImpactEventSource = .automaticVisualConfirmation
+        source: LiveImpactEventSource = .automaticVisualConfirmation,
+        audioAssisted: Bool = false,
+        supportingAudioEventID: String? = nil,
+        audioImpulseStrength: Double? = nil
     ) throws {
+        let hasSupportingAudioID = supportingAudioEventID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         guard !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !temporalCandidateID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               shotIndex > 0,
               frameSequenceIndex >= 0,
               timestamp >= 0,
               timestamp.isFinite,
-              (0...1).contains(confidence) else {
+              (0...1).contains(confidence),
+              audioImpulseStrength == nil || (audioImpulseStrength ?? 0) >= 0,
+              audioImpulseStrength == nil || (audioImpulseStrength ?? 0).isFinite,
+              !audioAssisted || hasSupportingAudioID else {
             throw LiveImpactEventValidationError.invalidEvent
         }
 
@@ -905,6 +915,42 @@ public struct LiveImpactEvent: Codable, Equatable, Sendable, Identifiable {
         self.confidenceBand = confidenceBand
         self.temporalCandidateID = temporalCandidateID
         self.source = source
+        self.audioAssisted = audioAssisted
+        self.supportingAudioEventID = supportingAudioEventID
+        self.audioImpulseStrength = audioImpulseStrength
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case shotIndex
+        case frameSequenceIndex
+        case timestamp
+        case normalizedCoordinate
+        case confidence
+        case confidenceBand
+        case temporalCandidateID
+        case source
+        case audioAssisted
+        case supportingAudioEventID
+        case audioImpulseStrength
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            id: container.decode(String.self, forKey: .id),
+            shotIndex: container.decode(Int.self, forKey: .shotIndex),
+            frameSequenceIndex: container.decode(Int.self, forKey: .frameSequenceIndex),
+            timestamp: container.decode(TimeInterval.self, forKey: .timestamp),
+            normalizedCoordinate: container.decode(NormalizedImagePoint.self, forKey: .normalizedCoordinate),
+            confidence: container.decode(Double.self, forKey: .confidence),
+            confidenceBand: container.decode(TemporalConfidenceBand.self, forKey: .confidenceBand),
+            temporalCandidateID: container.decode(String.self, forKey: .temporalCandidateID),
+            source: container.decodeIfPresent(LiveImpactEventSource.self, forKey: .source) ?? .automaticVisualConfirmation,
+            audioAssisted: container.decodeIfPresent(Bool.self, forKey: .audioAssisted) ?? false,
+            supportingAudioEventID: container.decodeIfPresent(String.self, forKey: .supportingAudioEventID),
+            audioImpulseStrength: container.decodeIfPresent(Double.self, forKey: .audioImpulseStrength)
+        )
     }
 }
 
@@ -932,8 +978,13 @@ public struct LiveImpactSession: Sendable {
     private var events: [LiveImpactEvent] = []
     private var emittedTemporalCandidateIDs = Set<String>()
     private var lastAcceptedFrameSequenceIndex: Int?
+    private var audioImpulseBuffer: AudioImpulseRingBuffer?
 
-    public init() {}
+    public init(audioAssistConfiguration: AudioAssistConfiguration? = nil) {
+        if let audioAssistConfiguration {
+            audioImpulseBuffer = AudioImpulseRingBuffer(configuration: audioAssistConfiguration)
+        }
+    }
 
     public var currentStatus: LiveMonitoringStatus {
         status
@@ -943,15 +994,30 @@ public struct LiveImpactSession: Sendable {
         events
     }
 
+    public var bufferedAudioImpulses: [AudioImpulseCandidate] {
+        audioImpulseBuffer?.candidates ?? []
+    }
+
     public mutating func startString() {
         status = .monitoring
         events = []
         emittedTemporalCandidateIDs = []
         lastAcceptedFrameSequenceIndex = nil
+        if let configuration = audioImpulseBuffer?.configuration {
+            audioImpulseBuffer = AudioImpulseRingBuffer(configuration: configuration)
+        }
     }
 
     public mutating func endString() {
         status = .ended
+    }
+
+    public mutating func recordAudioImpulse(_ candidate: AudioImpulseCandidate) {
+        if audioImpulseBuffer == nil {
+            audioImpulseBuffer = AudioImpulseRingBuffer()
+        }
+
+        audioImpulseBuffer?.append(candidate)
     }
 
     public mutating func process(_ temporalResult: TemporalConfirmationResult) throws -> LiveImpactFrameOutcome {
@@ -993,6 +1059,9 @@ public struct LiveImpactSession: Sendable {
         var newEvents: [LiveImpactEvent] = []
         for candidate in highCandidates where !emittedTemporalCandidateIDs.contains(candidate.id) {
             emittedTemporalCandidateIDs.insert(candidate.id)
+            let audioSupport = audioImpulseBuffer.flatMap {
+                AudioVisualCorrelation.audioSupport(forVisualTimestamp: candidate.lastObservedTimestamp, in: $0)
+            }
             let event = try LiveImpactEvent(
                 id: "live-impact-\(events.count + newEvents.count + 1)",
                 shotIndex: events.count + newEvents.count + 1,
@@ -1001,7 +1070,10 @@ public struct LiveImpactSession: Sendable {
                 normalizedCoordinate: candidate.centroid,
                 confidence: candidate.confidence,
                 confidenceBand: candidate.confidenceBand,
-                temporalCandidateID: candidate.id
+                temporalCandidateID: candidate.id,
+                audioAssisted: audioSupport != nil,
+                supportingAudioEventID: audioSupport?.id,
+                audioImpulseStrength: audioSupport?.strength
             )
             newEvents.append(event)
         }
