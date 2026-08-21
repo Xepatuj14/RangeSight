@@ -115,8 +115,10 @@ final class TargetIsolationTests: XCTestCase {
         let insideEdge = try processor.process(frame(index: 2, changes: [(targetA, [(9, 4), (9, 5)])]))
 
         XCTAssertEqual(outsideEdge.changeResult?.candidates, [])
-        XCTAssertEqual(insideEdge.changeResult?.candidates.count, 1)
-        XCTAssertEqual(insideEdge.changeResult?.candidates.first?.centroid.x, 0.95, accuracy: 0.000001)
+        let changeResult = try XCTUnwrap(insideEdge.changeResult)
+        XCTAssertEqual(changeResult.candidates.count, 1)
+        let candidate = try XCTUnwrap(changeResult.candidates.first)
+        XCTAssertEqual(candidate.centroid.x, 0.95, accuracy: 0.000001)
     }
 
     func testIsolationDiagnosticsExposeReferenceAndFailureStateWithoutRawFrames() throws {
