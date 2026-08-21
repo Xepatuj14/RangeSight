@@ -13,6 +13,19 @@ Status values:
 - [ ] No compiler errors
 - [ ] No known P0/P1 release blockers
 
+## Internal TestFlight Upload
+
+1. Push code and confirm Native iOS Validation is green.
+2. Open GitHub -> Actions.
+3. Select TestFlight Upload.
+4. Choose Run workflow on main.
+5. Wait for archive, sign, export, and upload.
+6. Open App Store Connect.
+7. Wait for Apple processing.
+8. Add the build to internal TestFlight testing.
+9. Install on a physical iPhone.
+10. Run the RangeSight smoke checklist below.
+
 ## Permissions
 
 - [ ] Camera request verified from camera setup
