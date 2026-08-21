@@ -12,6 +12,14 @@ struct SessionShellView: View {
     @State private var audioAssistEnabled = false
     @State private var editableShots = MockRangeSessionData.sample.shots
     @State private var editableCandidates = MockRangeSessionData.sample.candidates
+    @State private var deletedShots: [MockShotMarker] = []
+    @State private var saveFlowState: ReleaseSaveFlowState = .review
+    @State private var saveErrorMessage: String?
+    @State private var saveGeneration = 0
+    @State private var activeSessionID = SessionSaveIdentityFactory.sessionID()
+    @State private var activeStringID = SessionSaveIdentityFactory.stringID()
+    @State private var activeSessionStartedAt = Date()
+    @State private var activeStringStartedAt = Date()
     @State private var analyticsResult = SessionAnalyticsEngine().analytics(for: PersistedRangeSightStore())
     @State private var analyticsStatus = "No saved sessions yet."
     @State private var selectedDateRange: HistoryDateRangeSelection = .allTime
@@ -24,6 +32,7 @@ struct SessionShellView: View {
     @State private var distanceFilterOptions: [HistoryDistanceFilterOption] = []
     private let data = MockRangeSessionData.sample
     private let historyRepository = LocalRangeSightRepository(storeURL: RangeSightStoreLocation.defaultStoreURL)
+    private let saveCoordinator = ProductionSessionSaveCoordinator()
 
     private var screen: AppScreen {
         AppNavigation.screen(for: selectedScreen)
@@ -39,6 +48,10 @@ struct SessionShellView: View {
 
     private var latestShotScore: String {
         editableShots.last.map { "\($0.score)" } ?? "No score"
+    }
+
+    private var saveInProgress: Bool {
+        saveFlowState == .saving
     }
 
     var body: some View {
@@ -170,13 +183,34 @@ struct SessionShellView: View {
 
     private var homeView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            primaryAction("New Session", systemImage: "plus.circle.fill", destination: .sessionSetup)
+            Button {
+                resetWorkingString()
+                selectedScreen = .sessionSetup
+            } label: {
+                Label("New Session", systemImage: "plus.circle.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
             primaryAction("Resume Monitor", systemImage: "scope", destination: .liveMonitor)
             section("Recent") {
-                ForEach(data.history) { session in
-                    row(title: session.date, value: "\(session.distance) · \(session.bestGroup)")
+                if analyticsResult.historyItems.isEmpty {
+                    Text(analyticsStatus)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.muted)
+                } else {
+                    ForEach(analyticsResult.historyItems.prefix(3)) { session in
+                        row(
+                            title: shortDate(session.startedAt),
+                            value: "\(distanceLabel(session.distance, unit: session.distanceUnit)) - \(scoreLabel(session.totalScore))"
+                        )
+                    }
                 }
             }
+        }
+        .task {
+            await loadHistoryAnalytics()
         }
     }
 
@@ -244,7 +278,71 @@ struct SessionShellView: View {
                     row(title: "Shot \(shot.id)", value: "\(shot.score)")
                 }
             }
-            primaryAction("Save String", systemImage: "checkmark.circle.fill", destination: .sessionSummary)
+            saveStringControls
+        }
+    }
+
+    private var saveStringControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                startSaveString()
+            } label: {
+                Label(saveButtonTitle, systemImage: saveButtonSystemImage)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(saveFlowState == .failed ? Theme.warning : Theme.accent)
+            .disabled(saveFlowState == .saving || saveFlowState == .saved)
+
+            if saveFlowState == .saving {
+                ProgressView("Saving string")
+                    .foregroundStyle(Theme.muted)
+            }
+
+            if let saveErrorMessage {
+                Text(saveErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    selectedScreen = .liveMonitor
+                } label: {
+                    Label("Discard/Back", systemImage: "arrow.uturn.backward")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .disabled(saveFlowState == .saving)
+            }
+        }
+    }
+
+    private var saveButtonTitle: String {
+        switch saveFlowState {
+        case .review:
+            return "Save String"
+        case .saving:
+            return "Saving..."
+        case .saved:
+            return "Saved"
+        case .failed:
+            return "Retry Save"
+        case .discarded:
+            return "Save String"
+        }
+    }
+
+    private var saveButtonSystemImage: String {
+        switch saveFlowState {
+        case .review, .discarded:
+            return "checkmark.circle.fill"
+        case .saving:
+            return "hourglass"
+        case .saved:
+            return "checkmark.seal.fill"
+        case .failed:
+            return "arrow.clockwise.circle.fill"
         }
     }
 
@@ -287,6 +385,7 @@ struct SessionShellView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(isAddingImpact ? Theme.warning : Theme.accent)
+                .disabled(saveInProgress)
 
                 Button {
                     confirmSelectedCandidate()
@@ -295,7 +394,7 @@ struct SessionShellView: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.bordered)
-                .disabled(selectedCandidateID == nil)
+                .disabled(selectedCandidateID == nil || saveInProgress)
             }
 
             HStack(spacing: 10) {
@@ -307,7 +406,7 @@ struct SessionShellView: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.bordered)
-                .disabled(selectedShotID == nil)
+                .disabled(selectedShotID == nil || saveInProgress)
 
                 Button {
                     deleteSelectedShot()
@@ -317,7 +416,7 @@ struct SessionShellView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(Theme.warning)
-                .disabled(selectedShotID == nil)
+                .disabled(selectedShotID == nil || saveInProgress)
 
                 Button {
                     selectedShotID = nil
@@ -329,6 +428,7 @@ struct SessionShellView: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.bordered)
+                .disabled(saveInProgress)
             }
         }
     }
@@ -352,6 +452,7 @@ struct SessionShellView: View {
                 MockShotMarker(
                     id: nextID,
                     normalized: coordinate,
+                    originalNormalized: nil,
                     score: scoreValue(for: coordinate),
                     confidence: 0,
                     source: .manualAdded
@@ -379,13 +480,14 @@ struct SessionShellView: View {
         let candidate = editableCandidates.remove(at: index)
         let nextID = (editableShots.map(\.id).max() ?? 0) + 1
         editableShots.append(
-            MockShotMarker(
-                id: nextID,
-                normalized: candidate.normalized,
-                score: scoreValue(for: candidate.normalized),
-                confidence: candidate.confidence,
-                source: .userConfirmed
-            )
+                MockShotMarker(
+                    id: nextID,
+                    normalized: candidate.normalized,
+                    originalNormalized: nil,
+                    score: scoreValue(for: candidate.normalized),
+                    confidence: candidate.confidence,
+                    source: .userConfirmed
+                )
         )
         self.selectedCandidateID = nil
         selectedShotID = nextID
@@ -397,9 +499,206 @@ struct SessionShellView: View {
             return
         }
 
+        if let deleted = editableShots.first(where: { $0.id == selectedShotID }) {
+            deletedShots.append(deleted)
+        }
         editableShots.removeAll { $0.id == selectedShotID }
         self.selectedShotID = nil
         isMovingImpact = false
+    }
+
+    private func startSaveString() {
+        let event: ReleaseSaveFlowEvent = saveFlowState == .failed ? .retry : .saveTapped
+        guard let nextState = ReleaseSaveFlow.nextState(from: saveFlowState, event: event) else {
+            return
+        }
+
+        saveGeneration += 1
+        let generation = saveGeneration
+        let sessionID = activeSessionID
+        let stringID = activeStringID
+        saveFlowState = nextState
+        saveErrorMessage = nil
+
+        let request: SessionSaveRequest
+        do {
+            request = try makeSessionSaveRequest(sessionID: sessionID, stringID: stringID)
+        } catch {
+            saveFlowState = ReleaseSaveFlow.nextState(from: saveFlowState, event: .saveFailed) ?? .failed
+            saveErrorMessage = "Save failed. Your reviewed string is still here; retry when ready."
+            return
+        }
+
+        Task {
+            do {
+                _ = try await saveCoordinator.save(request, to: historyRepository)
+                await MainActor.run {
+                    guard generation == saveGeneration,
+                          sessionID == activeSessionID,
+                          stringID == activeStringID,
+                          let savedState = ReleaseSaveFlow.nextState(from: saveFlowState, event: .saveSucceeded) else {
+                        return
+                    }
+
+                    saveFlowState = savedState
+                    selectedScreen = .sessionSummary
+                }
+                await loadHistoryAnalytics()
+            } catch {
+                await MainActor.run {
+                    guard generation == saveGeneration,
+                          sessionID == activeSessionID,
+                          stringID == activeStringID,
+                          let failedState = ReleaseSaveFlow.nextState(from: saveFlowState, event: .saveFailed) else {
+                        return
+                    }
+
+                    saveFlowState = failedState
+                    saveErrorMessage = "Save failed. Your reviewed string is still here; retry when ready."
+                }
+            }
+        }
+    }
+
+    private func makeSessionSaveRequest(
+        sessionID: RangeSessionID,
+        stringID: RangeStringID
+    ) throws -> SessionSaveRequest {
+        let target = SupportedTargetCatalog.bullseyePracticeTargetDefinition
+        let firearmID = FirearmProfileID(rawValue: "release-range-9")
+        let firearm = FirearmProfile(
+            id: firearmID,
+            nickname: data.firearm,
+            category: .handgun,
+            caliber: "9mm",
+            notes: nil,
+            createdAt: activeSessionStartedAt
+        )
+        let session = RangeSession(
+            id: sessionID,
+            startedAt: activeSessionStartedAt,
+            endedAt: Date(),
+            distance: 7,
+            distanceUnit: .yard,
+            firearmID: firearmID,
+            targetDefinitionID: target.id,
+            device: DeviceMetadata(
+                platform: .iOS,
+                modelName: nil,
+                osVersion: nil,
+                appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+            )
+        )
+        let rangeString = RangeString(
+            id: stringID,
+            sessionID: sessionID,
+            index: 1,
+            baselineAssetID: nil,
+            startedAt: activeStringStartedAt,
+            endedAt: Date()
+        )
+
+        return try SessionSaveRequest(
+            session: session,
+            rangeString: rangeString,
+            firearmProfile: firearm,
+            targetDefinition: target,
+            correctionState: makeCorrectionState(stringID: stringID)
+        )
+    }
+
+    private func makeCorrectionState(stringID: RangeStringID) throws -> ImpactCorrectionState {
+        var state = ImpactCorrectionState()
+        let activeShots = editableShots.sorted { $0.id < $1.id }
+        let removedShots = deletedShots.sorted { $0.id < $1.id }
+
+        for shot in activeShots {
+            try add(shot, to: &state, stringID: stringID, deleted: false)
+        }
+
+        for shot in removedShots {
+            try add(shot, to: &state, stringID: stringID, deleted: true)
+        }
+
+        return state
+    }
+
+    private func add(
+        _ shot: MockShotMarker,
+        to state: inout ImpactCorrectionState,
+        stringID: RangeStringID,
+        deleted: Bool
+    ) throws {
+        let id = ShotID(rawValue: "shot-\(shot.id)")
+        let timestamp = activeStringStartedAt.addingTimeInterval(Double(shot.id))
+
+        switch shot.source {
+        case .manualAdded:
+            let accepted = try state.manuallyAddImpact(
+                stringID: stringID,
+                coordinate: shot.originalNormalized ?? shot.normalized,
+                timestamp: timestamp
+            )
+            if deleted {
+                try state.deleteImpact(id: accepted.id)
+            }
+        case .userConfirmed:
+            try addCandidateBackedImpact(
+                shot,
+                id: id,
+                stringID: stringID,
+                timestamp: timestamp,
+                to: &state,
+                deleted: deleted
+            )
+        case .autoConfirmed, .corrected:
+            let rawCoordinate = shot.originalNormalized ?? shot.normalized
+            try state.ingestDetectorEvent(
+                id: id,
+                stringID: stringID,
+                eventID: "detector-\(shot.id)",
+                coordinate: rawCoordinate,
+                confidence: shot.confidence,
+                timestamp: timestamp
+            )
+            if shot.normalized != rawCoordinate || shot.source == .corrected {
+                try state.moveImpact(id: id, to: shot.normalized)
+            }
+            if deleted {
+                try state.deleteImpact(id: id)
+            }
+        }
+    }
+
+    private func addCandidateBackedImpact(
+        _ shot: MockShotMarker,
+        id: ShotID,
+        stringID: RangeStringID,
+        timestamp: Date,
+        to state: inout ImpactCorrectionState,
+        deleted: Bool
+    ) throws {
+        let candidateID = "candidate-\(shot.id)"
+        let raw = try RawImpactEvidence(
+            detectorEventID: nil,
+            candidateID: candidateID,
+            coordinate: shot.originalNormalized ?? shot.normalized,
+            confidence: shot.confidence,
+            timestamp: timestamp
+        )
+        state.addMediumCandidate(raw)
+        try state.confirmMediumCandidate(
+            candidateID: candidateID,
+            as: id,
+            stringID: stringID,
+            timestamp: timestamp
+        )
+        if let original = shot.originalNormalized, original != shot.normalized {
+            try state.moveImpact(id: id, to: shot.normalized)
+        }
+        if deleted {
+            try state.deleteImpact(id: id)
+        }
     }
 
     private var summaryView: some View {
@@ -410,14 +709,16 @@ struct SessionShellView: View {
                 row(title: "Score", value: "\(currentStringScore)")
                 row(title: "Group", value: data.groupSize)
             }
-            ForEach(data.summaries) { summary in
-                section(summary.title) {
-                    row(title: "Shots", value: "\(summary.shots)")
-                    row(title: "Score", value: "\(summary.score)")
-                    row(title: "Group", value: summary.groupSize)
-                }
+            Button {
+                resetWorkingString()
+                selectedScreen = .cameraSetup
+            } label: {
+                Label("New String", systemImage: "scope")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 48)
             }
-            primaryAction("New String", systemImage: "scope", destination: .cameraSetup)
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
         }
     }
 
@@ -763,6 +1064,23 @@ struct SessionShellView: View {
         return String(format: "%.1f", rounded)
     }
 
+    private func resetWorkingString() {
+        editableShots = MockRangeSessionData.sample.shots
+        editableCandidates = MockRangeSessionData.sample.candidates
+        deletedShots = []
+        selectedShotID = nil
+        selectedCandidateID = nil
+        isAddingImpact = false
+        isMovingImpact = false
+        saveErrorMessage = nil
+        saveFlowState = .review
+        saveGeneration += 1
+        activeSessionID = SessionSaveIdentityFactory.sessionID()
+        activeStringID = SessionSaveIdentityFactory.stringID()
+        activeSessionStartedAt = Date()
+        activeStringStartedAt = Date()
+    }
+
     private var profilesView: some View {
         section(data.firearm) {
             row(title: "Category", value: "Handgun")
@@ -903,5 +1221,15 @@ private enum RangeSightStoreLocation {
         return baseURL
             .appendingPathComponent("RangeSight", isDirectory: true)
             .appendingPathComponent("store.json")
+    }
+}
+
+private enum SessionSaveIdentityFactory {
+    static func sessionID() -> RangeSessionID {
+        RangeSessionID(rawValue: "session-\(UUID().uuidString)")
+    }
+
+    static func stringID() -> RangeStringID {
+        RangeStringID(rawValue: "string-\(UUID().uuidString)")
     }
 }

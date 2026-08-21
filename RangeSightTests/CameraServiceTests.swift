@@ -13,5 +13,6 @@ final class CameraServiceTests: XCTestCase {
         XCTAssertEqual(CameraSessionFailure.cameraUnavailable, .cameraUnavailable)
         XCTAssertEqual(CameraSessionFailure.cannotAddInput, .cannotAddInput)
         XCTAssertEqual(CameraSessionFailure.cannotAddOutput, .cannotAddOutput)
+        XCTAssertEqual(CameraSessionFailure.startupTimedOut, .startupTimedOut)
     }
 }

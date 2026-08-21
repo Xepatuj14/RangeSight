@@ -10,6 +10,9 @@ final class CameraPreviewModel: ObservableObject {
 
     let previewSession: CameraPreviewSession
     private let cameraService: any CameraService
+    private var activationTask: Task<Void, Never>?
+    private var startupTimeoutTask: Task<Void, Never>?
+    private var activationGeneration = 0
 
     init(
         cameraService: any CameraService = AVCaptureCameraService(),
@@ -20,14 +23,23 @@ final class CameraPreviewModel: ObservableObject {
     }
 
     func activate() {
-        Task {
+        activationGeneration += 1
+        let generation = activationGeneration
+        activationTask?.cancel()
+        startupTimeoutTask?.cancel()
+        sessionState = .idle
+
+        activationTask = Task { [weak self] in
+            guard let self else { return }
             let state = await cameraService.authorizationState()
+            guard !Task.isCancelled, generation == activationGeneration else { return }
 
             if state == .notDetermined {
                 authorizationState = await cameraService.requestAuthorization()
             } else {
                 authorizationState = state
             }
+            guard !Task.isCancelled, generation == activationGeneration else { return }
 
             guard authorizationState == .authorized else {
                 sessionState = .failed(.cameraUnavailable)
@@ -35,14 +47,21 @@ final class CameraPreviewModel: ObservableObject {
             }
 
             sessionState = .configuring
+            scheduleStartupTimeout(for: generation)
             previewSession.configureForPreview { [weak self] result in
                 Task { @MainActor in
+                    guard let self,
+                          generation == self.activationGeneration else {
+                        return
+                    }
+
+                    self.startupTimeoutTask?.cancel()
                     switch result {
                     case .success:
-                        self?.sessionState = .running
-                        self?.previewSession.start()
+                        self.sessionState = .running
+                        self.previewSession.start()
                     case .failure(let failure):
-                        self?.sessionState = .failed(failure)
+                        self.sessionState = .failed(failure)
                     }
                 }
             }
@@ -50,8 +69,40 @@ final class CameraPreviewModel: ObservableObject {
     }
 
     func deactivate() {
+        activationGeneration += 1
+        activationTask?.cancel()
+        startupTimeoutTask?.cancel()
         previewSession.stop()
         sessionState = .stopped
+    }
+
+    func retry() {
+        deactivate()
+        activate()
+    }
+
+    private func scheduleStartupTimeout(for generation: Int) {
+        startupTimeoutTask?.cancel()
+        let timeout = ReleaseTimeoutPolicy.cameraStartup.duration ?? 8
+        let nanoseconds = UInt64(timeout * 1_000_000_000)
+        startupTimeoutTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: nanoseconds)
+            } catch {
+                return
+            }
+
+            await MainActor.run {
+                guard let self,
+                      generation == self.activationGeneration,
+                      self.sessionState == .configuring else {
+                    return
+                }
+
+                self.previewSession.stop()
+                self.sessionState = .failed(.startupTimedOut)
+            }
+        }
     }
 }
 
@@ -76,6 +127,16 @@ struct CameraPreviewSurface: View {
                         .font(.caption)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 16)
+                }
+                if canRetryCamera {
+                    Button("Retry Camera") {
+                        model.retry()
+                    }
+                    .font(.caption.bold())
+                    .buttonStyle(.borderedProminent)
+                    .tint(.yellow)
+                    .foregroundStyle(.black)
+                    .padding(.top, 4)
                 }
             }
             .foregroundStyle(.yellow)
@@ -109,7 +170,7 @@ struct CameraPreviewSurface: View {
         case (_, .running):
             return "Preview active"
         case (_, .failed):
-            return "Camera unavailable"
+            return "Camera needs attention"
         case (_, .stopped):
             return "Preview stopped"
         default:
@@ -122,8 +183,22 @@ struct CameraPreviewSurface: View {
         case .denied, .restricted:
             return ReleasePermissionCopy.cameraMessage(for: model.authorizationState)
         default:
+            if case .failed(let failure) = model.sessionState {
+                return ReleasePermissionCopy.cameraSessionMessage(for: failure)
+            }
+
             return nil
         }
+    }
+
+    private var canRetryCamera: Bool {
+        model.authorizationState == .authorized && {
+            if case .failed = model.sessionState {
+                return true
+            }
+
+            return false
+        }()
     }
 
     private var statusSymbol: String {

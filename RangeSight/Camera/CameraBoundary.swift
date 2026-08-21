@@ -22,4 +22,5 @@ public enum CameraSessionFailure: Error, Equatable, Sendable {
     case cameraUnavailable
     case cannotAddInput
     case cannotAddOutput
+    case startupTimedOut
 }

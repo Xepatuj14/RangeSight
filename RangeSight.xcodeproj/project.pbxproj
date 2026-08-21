@@ -58,6 +58,9 @@
 		2A0000010000000000000031 /* ValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001031 /* ValidationTests.swift */; };
 		2A0000010000000000000032 /* ReleaseHardeningBoundary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001032 /* ReleaseHardeningBoundary.swift */; };
 		2A0000010000000000000033 /* ReleaseHardeningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001033 /* ReleaseHardeningTests.swift */; };
+		2A0000010000000000000034 /* ProcessFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001034 /* ProcessFlowTests.swift */; };
+		2A0000010000000000000035 /* SessionSaveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001035 /* SessionSaveCoordinator.swift */; };
+		2A0000010000000000000036 /* SessionSaveCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000010000000000001036 /* SessionSaveCoordinatorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +143,9 @@
 		2A0000010000000000001031 /* ValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000001032 /* ReleaseHardeningBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseHardeningBoundary.swift; sourceTree = "<group>"; };
 		2A0000010000000000001033 /* ReleaseHardeningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseHardeningTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001034 /* ProcessFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessFlowTests.swift; sourceTree = "<group>"; };
+		2A0000010000000000001035 /* SessionSaveCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSaveCoordinator.swift; sourceTree = "<group>"; };
+		2A0000010000000000001036 /* SessionSaveCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSaveCoordinatorTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -284,6 +290,7 @@
 				2A000001000000000000100B /* PersistenceBoundary.swift */,
 				2A000001000000000000101B /* PersistedRangeSightStore.swift */,
 				2A000001000000000000101C /* LocalRangeSightRepository.swift */,
+				2A0000010000000000001035 /* SessionSaveCoordinator.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -347,6 +354,8 @@
 				2A000001000000000000102F /* PerformanceTests.swift */,
 				2A0000010000000000001031 /* ValidationTests.swift */,
 				2A0000010000000000001033 /* ReleaseHardeningTests.swift */,
+				2A0000010000000000001034 /* ProcessFlowTests.swift */,
+				2A0000010000000000001036 /* SessionSaveCoordinatorTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -516,6 +525,7 @@
 				2A000001000000000000000B /* PersistenceBoundary.swift in Sources */,
 				2A000001000000000000001B /* PersistedRangeSightStore.swift in Sources */,
 				2A000001000000000000001C /* LocalRangeSightRepository.swift in Sources */,
+				2A0000010000000000000035 /* SessionSaveCoordinator.swift in Sources */,
 				2A000001000000000000000C /* AnalyticsBoundary.swift in Sources */,
 				2A000001000000000000002E /* PerformanceBoundary.swift in Sources */,
 				2A000001000000000000000D /* ReplayBoundary.swift in Sources */,
@@ -544,6 +554,8 @@
 				2A000001000000000000002F /* PerformanceTests.swift in Sources */,
 				2A0000010000000000000031 /* ValidationTests.swift in Sources */,
 				2A0000010000000000000033 /* ReleaseHardeningTests.swift in Sources */,
+				2A0000010000000000000034 /* ProcessFlowTests.swift in Sources */,
+				2A0000010000000000000036 /* SessionSaveCoordinatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
