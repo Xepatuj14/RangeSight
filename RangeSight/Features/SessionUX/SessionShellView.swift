@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 import RangeSightCore
 
@@ -11,7 +12,18 @@ struct SessionShellView: View {
     @State private var audioAssistEnabled = false
     @State private var editableShots = MockRangeSessionData.sample.shots
     @State private var editableCandidates = MockRangeSessionData.sample.candidates
+    @State private var analyticsResult = SessionAnalyticsEngine().analytics(for: PersistedRangeSightStore())
+    @State private var analyticsStatus = "No saved sessions yet."
+    @State private var selectedDateRange: HistoryDateRangeSelection = .allTime
+    @State private var selectedFirearmFilter: FirearmProfileID?
+    @State private var selectedTargetFilter: TargetDefinitionID?
+    @State private var selectedDistanceFilter: HistoryDistanceFilterOption?
+    @State private var selectedHistorySessionID: RangeSessionID?
+    @State private var firearmFilterOptions: [FirearmProfile] = []
+    @State private var targetFilterOptions: [TargetDefinition] = []
+    @State private var distanceFilterOptions: [HistoryDistanceFilterOption] = []
     private let data = MockRangeSessionData.sample
+    private let historyRepository = LocalRangeSightRepository(storeURL: RangeSightStoreLocation.defaultStoreURL)
 
     private var screen: AppScreen {
         AppNavigation.screen(for: selectedScreen)
@@ -424,15 +436,331 @@ struct SessionShellView: View {
 
     private var historyView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ForEach(data.history) { session in
-                section(session.date) {
-                    row(title: "Firearm", value: session.firearm)
-                    row(title: "Target", value: session.target)
-                    row(title: "Distance", value: session.distance)
-                    row(title: "Best group", value: session.bestGroup)
+            historyFilterSection
+            historyAnalyticsSection
+            historyTrendSection
+            historyListSection
+            if let selectedItem = selectedHistoryItem {
+                historyDetailSection(selectedItem)
+            }
+        }
+        .task {
+            await loadHistoryAnalytics()
+        }
+        .onChange(of: selectedDateRange) { _, _ in
+            Task { await loadHistoryAnalytics() }
+        }
+        .onChange(of: selectedFirearmFilter) { _, _ in
+            Task { await loadHistoryAnalytics() }
+        }
+        .onChange(of: selectedTargetFilter) { _, _ in
+            Task { await loadHistoryAnalytics() }
+        }
+        .onChange(of: selectedDistanceFilter) { _, _ in
+            Task { await loadHistoryAnalytics() }
+        }
+    }
+
+    private var historyFilterSection: some View {
+        section("Filters") {
+            Picker("Period", selection: $selectedDateRange) {
+                ForEach(HistoryDateRangeSelection.allCases) { range in
+                    Text(range.title).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            HStack(spacing: 10) {
+                filterMenu(
+                    title: "Firearm",
+                    value: selectedFirearmFilter.flatMap(firearmName) ?? "All"
+                ) {
+                    Button("All") { selectedFirearmFilter = nil }
+                    ForEach(firearmFilterOptions, id: \.id) { firearm in
+                        Button(firearm.nickname) { selectedFirearmFilter = firearm.id }
+                    }
+                }
+
+                filterMenu(
+                    title: "Distance",
+                    value: selectedDistanceFilter.map(distanceLabel) ?? "All"
+                ) {
+                    Button("All") { selectedDistanceFilter = nil }
+                    ForEach(distanceFilterOptions) { option in
+                        Button(distanceLabel(option)) { selectedDistanceFilter = option }
+                    }
+                }
+
+                filterMenu(
+                    title: "Target",
+                    value: selectedTargetFilter.flatMap(targetName) ?? "All"
+                ) {
+                    Button("All") { selectedTargetFilter = nil }
+                    ForEach(targetFilterOptions, id: \.id) { target in
+                        Button(target.name) { selectedTargetFilter = target.id }
+                    }
                 }
             }
         }
+    }
+
+    private var historyAnalyticsSection: some View {
+        section("Analytics") {
+            if analyticsResult.summary.sessionCount == 0 {
+                row(title: "Status", value: analyticsStatus)
+            } else {
+                row(title: "Sessions", value: "\(analyticsResult.summary.sessionCount)")
+                row(title: "Strings", value: "\(analyticsResult.summary.stringCount)")
+                row(title: "Accepted shots", value: "\(analyticsResult.summary.acceptedShotCount)")
+                row(
+                    title: "Avg group",
+                    value: lengthLabel(
+                        analyticsResult.summary.averageGroupSize,
+                        unit: analyticsResult.summary.metricUnit
+                    )
+                )
+                row(
+                    title: "Best group",
+                    value: lengthLabel(
+                        analyticsResult.summary.bestGroup?.value,
+                        unit: analyticsResult.summary.bestGroup?.unit
+                    )
+                )
+                row(title: "Avg score", value: scoreLabel(analyticsResult.summary.averageScorePerString))
+                row(title: "Best score", value: scoreLabel(analyticsResult.summary.bestScore?.value))
+                row(
+                    title: "Avg POI",
+                    value: pointLabel(analyticsResult.summary.averagePointOfImpactOffset)
+                )
+                row(
+                    title: "Dispersion",
+                    value: dispersionLabel(
+                        horizontal: analyticsResult.summary.averageHorizontalDispersion,
+                        vertical: analyticsResult.summary.averageVerticalDispersion,
+                        unit: analyticsResult.summary.metricUnit
+                    )
+                )
+                if analyticsResult.summary.needsMoreDataForTrendClassification {
+                    row(title: "Trend", value: "More data needed")
+                }
+            }
+        }
+    }
+
+    private var historyTrendSection: some View {
+        section("Recent Trend") {
+            let recentGroups = analyticsResult.groupSizeTrend.suffix(3)
+            if recentGroups.isEmpty {
+                row(title: "Group size", value: "Unavailable")
+            } else {
+                ForEach(Array(recentGroups)) { point in
+                    row(
+                        title: shortDate(point.date),
+                        value: lengthLabel(
+                            point.groupMetrics?.extremeSpread,
+                            unit: point.groupMetrics?.groupCenter.unit
+                        )
+                    )
+                }
+            }
+
+            if analyticsResult.scoreTrend.isEmpty {
+                row(title: "Score trend", value: "Unavailable")
+            } else {
+                row(title: "Score target", value: analyticsResult.summary.scoreTargetDefinitionID.flatMap(targetName) ?? "Selected target")
+            }
+        }
+    }
+
+    private var historyListSection: some View {
+        section("History") {
+            if analyticsResult.historyItems.isEmpty {
+                row(title: "Sessions", value: analyticsStatus)
+            } else {
+                ForEach(analyticsResult.historyItems) { item in
+                    Button {
+                        selectedHistorySessionID = item.id
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            row(title: shortDate(item.startedAt), value: item.firearmName ?? "No firearm")
+                            row(title: "Target", value: item.targetName ?? item.targetDefinitionID.rawValue)
+                            row(title: "Distance", value: distanceLabel(item.distance, unit: item.distanceUnit))
+                            row(title: "Shots", value: "\(item.acceptedShotCount)")
+                            row(title: "Best group", value: lengthLabel(item.bestGroupSize, unit: item.groupUnit))
+                            row(title: "Score", value: scoreLabel(item.totalScore))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var selectedHistoryItem: SessionHistoryItem? {
+        guard let selectedHistorySessionID else {
+            return nil
+        }
+
+        return analyticsResult.historyItems.first { $0.id == selectedHistorySessionID }
+    }
+
+    private func historyDetailSection(_ item: SessionHistoryItem) -> some View {
+        section("Session Detail") {
+            row(title: "Started", value: fullDate(item.startedAt))
+            row(title: "Firearm", value: item.firearmName ?? "No firearm")
+            row(title: "Target", value: item.targetName ?? item.targetDefinitionID.rawValue)
+            row(title: "Distance", value: distanceLabel(item.distance, unit: item.distanceUnit))
+            row(title: "Strings", value: "\(item.stringCount)")
+            row(title: "Accepted shots", value: "\(item.acceptedShotCount)")
+            row(title: "Best group", value: lengthLabel(item.bestGroupSize, unit: item.groupUnit))
+            row(title: "Score", value: scoreLabel(item.totalScore))
+        }
+    }
+
+    @MainActor
+    private func loadHistoryAnalytics() async {
+        do {
+            let store = try await historyRepository.loadStore()
+            updateHistoryFilterOptions(from: store)
+            analyticsResult = SessionAnalyticsEngine().analytics(for: store, filter: analyticsFilter())
+            analyticsStatus = store.rangeSessions.isEmpty ? "No saved sessions yet" : "No matching sessions"
+        } catch {
+            analyticsResult = SessionAnalyticsEngine().analytics(for: PersistedRangeSightStore(), filter: analyticsFilter())
+            analyticsStatus = "Unable to load history"
+        }
+    }
+
+    @MainActor
+    private func updateHistoryFilterOptions(from store: PersistedRangeSightStore) {
+        firearmFilterOptions = store.firearmProfiles.sorted { $0.nickname < $1.nickname }
+        targetFilterOptions = store.targetDefinitions.sorted { $0.name < $1.name }
+        distanceFilterOptions = Array(
+            Set(
+                store.rangeSessions.map {
+                    HistoryDistanceFilterOption(distance: $0.distance, unit: $0.distanceUnit)
+                }
+            )
+        )
+        .sorted {
+            if $0.unit == $1.unit {
+                return $0.distance < $1.distance
+            }
+
+            return $0.unit.rawValue < $1.unit.rawValue
+        }
+
+        if let selectedFirearmFilter,
+           !firearmFilterOptions.contains(where: { $0.id == selectedFirearmFilter }) {
+            self.selectedFirearmFilter = nil
+        }
+
+        if let selectedTargetFilter,
+           !targetFilterOptions.contains(where: { $0.id == selectedTargetFilter }) {
+            self.selectedTargetFilter = nil
+        }
+
+        if let selectedDistanceFilter,
+           !distanceFilterOptions.contains(selectedDistanceFilter) {
+            self.selectedDistanceFilter = nil
+        }
+    }
+
+    private func analyticsFilter() -> AnalyticsFilter {
+        AnalyticsFilter(
+            firearmID: selectedFirearmFilter,
+            distance: selectedDistanceFilter?.distance,
+            distanceUnit: selectedDistanceFilter?.unit,
+            targetDefinitionID: selectedTargetFilter,
+            dateRange: selectedDateRange.dateRange(referenceDate: Date())
+        )
+    }
+
+    private func filterMenu<Content: View>(
+        title: String,
+        value: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Menu {
+            content()
+        } label: {
+            Label(value, systemImage: "line.3.horizontal.decrease.circle")
+                .font(.caption.bold())
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, minHeight: 38)
+        }
+        .accessibilityLabel(title)
+        .buttonStyle(.bordered)
+    }
+
+    private func firearmName(for id: FirearmProfileID) -> String? {
+        firearmFilterOptions.first { $0.id == id }?.nickname
+    }
+
+    private func targetName(for id: TargetDefinitionID) -> String? {
+        targetFilterOptions.first { $0.id == id }?.name
+    }
+
+    private func lengthLabel(_ value: Double?, unit: LengthUnit?) -> String {
+        guard let value, let unit else {
+            return "Unavailable"
+        }
+
+        return "\(decimal(value)) \(unit.rawValue)"
+    }
+
+    private func scoreLabel(_ value: Double?) -> String {
+        guard let value else {
+            return "Unavailable"
+        }
+
+        return decimal(value)
+    }
+
+    private func pointLabel(_ point: PhysicalPoint?) -> String {
+        guard let point else {
+            return "Unavailable"
+        }
+
+        return "x \(decimal(point.x)), y \(decimal(point.y)) \(point.unit.rawValue)"
+    }
+
+    private func dispersionLabel(horizontal: Double?, vertical: Double?, unit: LengthUnit?) -> String {
+        guard let horizontal, let vertical, let unit else {
+            return "Unavailable"
+        }
+
+        return "H \(decimal(horizontal)), V \(decimal(vertical)) \(unit.rawValue)"
+    }
+
+    private func distanceLabel(_ option: HistoryDistanceFilterOption) -> String {
+        distanceLabel(option.distance, unit: option.unit)
+    }
+
+    private func distanceLabel(_ distance: Double, unit: DistanceUnit) -> String {
+        "\(decimal(distance)) \(unit.rawValue)"
+    }
+
+    private func shortDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
+    }
+
+    private func fullDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
+    private func decimal(_ value: Double) -> String {
+        let rounded = (value * 10).rounded() / 10
+        if rounded == rounded.rounded() {
+            return String(Int(rounded))
+        }
+
+        return String(format: "%.1f", rounded)
     }
 
     private var profilesView: some View {
@@ -519,4 +847,58 @@ enum Theme {
     static let success = Color(.sRGB, red: 0.48, green: 0.86, blue: 0.58, opacity: 1)
     static let warning = Color(.sRGB, red: 1.0, green: 0.42, blue: 0.36, opacity: 1)
     static let control = Color(.sRGB, red: 0.24, green: 0.29, blue: 0.32, opacity: 1)
+}
+
+private enum HistoryDateRangeSelection: String, CaseIterable, Identifiable {
+    case allTime
+    case last30Days
+    case last90Days
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .allTime:
+            return "All"
+        case .last30Days:
+            return "30d"
+        case .last90Days:
+            return "90d"
+        }
+    }
+
+    func dateRange(referenceDate: Date) -> AnalyticsDateRange {
+        switch self {
+        case .allTime:
+            return .allTime
+        case .last30Days:
+            return .last30Days(referenceDate: referenceDate)
+        case .last90Days:
+            return .last90Days(referenceDate: referenceDate)
+        }
+    }
+}
+
+private struct HistoryDistanceFilterOption: Hashable, Identifiable {
+    let distance: Double
+    let unit: DistanceUnit
+
+    var id: String {
+        "\(distance)-\(unit.rawValue)"
+    }
+}
+
+private enum RangeSightStoreLocation {
+    static var defaultStoreURL: URL {
+        let baseURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? FileManager.default.temporaryDirectory
+
+        return baseURL
+            .appendingPathComponent("RangeSight", isDirectory: true)
+            .appendingPathComponent("store.json")
+    }
 }

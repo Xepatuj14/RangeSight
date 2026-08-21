@@ -51,6 +51,7 @@
 		2A000001000000000000002A /* FrameChangeDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102A /* FrameChangeDetectionTests.swift */; };
 		2A000001000000000000002B /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102B /* AudioCaptureService.swift */; };
 		2A000001000000000000002C /* AudioAssistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102C /* AudioAssistTests.swift */; };
+		2A000001000000000000002D /* AnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001000000000000102D /* AnalyticsTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -126,6 +127,7 @@
 		2A000001000000000000102A /* FrameChangeDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameChangeDetectionTests.swift; sourceTree = "<group>"; };
 		2A000001000000000000102B /* AudioCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
 		2A000001000000000000102C /* AudioAssistTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAssistTests.swift; sourceTree = "<group>"; };
+		2A000001000000000000102D /* AnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsTests.swift; sourceTree = "<group>"; };
 		2A0000010000000000002001 /* RangeSight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RangeSight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002002 /* RangeSightCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RangeSightCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A0000010000000000002003 /* RangeSightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RangeSightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -302,6 +304,7 @@
 				2A0000010000000000001028 /* FrameRegistrationTests.swift */,
 				2A000001000000000000102A /* FrameChangeDetectionTests.swift */,
 				2A000001000000000000102C /* AudioAssistTests.swift */,
+				2A000001000000000000102D /* AnalyticsTests.swift */,
 			);
 			path = RangeSightTests;
 			sourceTree = "<group>";
@@ -492,6 +495,7 @@
 				2A0000010000000000000028 /* FrameRegistrationTests.swift in Sources */,
 				2A000001000000000000002A /* FrameChangeDetectionTests.swift in Sources */,
 				2A000001000000000000002C /* AudioAssistTests.swift in Sources */,
+				2A000001000000000000002D /* AnalyticsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

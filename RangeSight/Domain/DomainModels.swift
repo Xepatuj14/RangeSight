@@ -82,12 +82,12 @@ public struct SessionAssetID: RawRepresentable, Codable, Hashable, Sendable {
     }
 }
 
-public enum DistanceUnit: String, Codable, Sendable {
+public enum DistanceUnit: String, Codable, Equatable, Hashable, Sendable {
     case yard
     case meter
 }
 
-public enum LengthUnit: String, Codable, Sendable {
+public enum LengthUnit: String, Codable, Equatable, Hashable, Sendable {
     case inch
     case millimeter
 }
