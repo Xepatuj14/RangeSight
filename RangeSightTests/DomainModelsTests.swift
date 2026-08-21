@@ -70,6 +70,26 @@ final class DomainModelsTests: XCTestCase {
         XCTAssertEqual(try DomainSerializer.payload(from: DomainSerializer.record(kind: "Shot", payload: shot), expectedKind: "Shot"), shot)
     }
 
+    func testFirearmProfileDirectConstructionRoundTripsThroughCodable() throws {
+        let createdAt = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-08-20T02:00:00Z"))
+        let firearm = FirearmProfile(
+            id: try FirearmProfileID("firearm-direct"),
+            nickname: "Range 9",
+            category: .handgun,
+            caliber: "9mm",
+            notes: "Release save profile.",
+            createdAt: createdAt
+        )
+
+        let encoded = try JSONEncoder().encode(firearm)
+        let decoded = try JSONDecoder().decode(FirearmProfile.self, from: encoded)
+
+        XCTAssertEqual(decoded, firearm)
+        XCTAssertEqual(decoded.nickname, "Range 9")
+        XCTAssertEqual(decoded.category, .handgun)
+        XCTAssertEqual(decoded.caliber, "9mm")
+    }
+
     func testInvalidShotCoordinatesAndConfidenceFail() throws {
         XCTAssertThrowsError(try NormalizedTargetCoordinate(x: 1.2, y: 0.48))
         XCTAssertThrowsError(

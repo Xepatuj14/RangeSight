@@ -178,6 +178,22 @@ public struct FirearmProfile: Codable, Equatable, Sendable {
     public let caliber: String?
     public let notes: String?
     public let createdAt: Date
+
+    public init(
+        id: FirearmProfileID,
+        nickname: String,
+        category: FirearmCategory,
+        caliber: String?,
+        notes: String?,
+        createdAt: Date
+    ) {
+        self.id = id
+        self.nickname = nickname
+        self.category = category
+        self.caliber = caliber
+        self.notes = notes
+        self.createdAt = createdAt
+    }
 }
 
 public struct TargetDefinition: Codable, Equatable, Sendable {
@@ -200,6 +216,18 @@ public struct DeviceMetadata: Codable, Equatable, Sendable {
     public let modelName: String?
     public let osVersion: String?
     public let appVersion: String?
+
+    public init(
+        platform: Platform,
+        modelName: String?,
+        osVersion: String?,
+        appVersion: String?
+    ) {
+        self.platform = platform
+        self.modelName = modelName
+        self.osVersion = osVersion
+        self.appVersion = appVersion
+    }
 }
 
 public struct RangeSession: Codable, Equatable, Sendable {
@@ -211,6 +239,26 @@ public struct RangeSession: Codable, Equatable, Sendable {
     public let firearmID: FirearmProfileID?
     public let targetDefinitionID: TargetDefinitionID
     public let device: DeviceMetadata
+
+    public init(
+        id: RangeSessionID,
+        startedAt: Date,
+        endedAt: Date?,
+        distance: Double,
+        distanceUnit: DistanceUnit,
+        firearmID: FirearmProfileID?,
+        targetDefinitionID: TargetDefinitionID,
+        device: DeviceMetadata
+    ) {
+        self.id = id
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.distance = distance
+        self.distanceUnit = distanceUnit
+        self.firearmID = firearmID
+        self.targetDefinitionID = targetDefinitionID
+        self.device = device
+    }
 }
 
 public struct RangeString: Codable, Equatable, Sendable {
@@ -220,6 +268,22 @@ public struct RangeString: Codable, Equatable, Sendable {
     public let baselineAssetID: SessionAssetID?
     public let startedAt: Date
     public let endedAt: Date?
+
+    public init(
+        id: RangeStringID,
+        sessionID: RangeSessionID,
+        index: Int,
+        baselineAssetID: SessionAssetID?,
+        startedAt: Date,
+        endedAt: Date?
+    ) {
+        self.id = id
+        self.sessionID = sessionID
+        self.index = index
+        self.baselineAssetID = baselineAssetID
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+    }
 }
 
 public struct ShotScore: Codable, Equatable, Sendable {
