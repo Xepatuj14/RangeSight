@@ -6,3 +6,6 @@ xcuserdata/
 *.moved-aside
 *.xcscmblueprint
 *.xccheckout
+*.p8
+*.p12
+*.mobileprovision
