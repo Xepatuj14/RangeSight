@@ -15,17 +15,38 @@ env:
 jobs:
   testflight:
     name: Archive and Upload Internal TestFlight Build
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Inspect Xcode
+      - name: Inspect and verify Xcode SDK
+        shell: bash
         run: |
+          set -euo pipefail
+
           xcodebuild -version
           xcode-select -p
+          xcrun --sdk iphoneos --show-sdk-version
+
+          XCODE_VERSION=$(xcodebuild -version | awk '/Xcode/ { print $2; exit }')
+          IPHONEOS_SDK_VERSION=$(xcrun --sdk iphoneos --show-sdk-version)
+          XCODE_MAJOR=${XCODE_VERSION%%.*}
+          IPHONEOS_SDK_MAJOR=${IPHONEOS_SDK_VERSION%%.*}
+
+          if [[ "$XCODE_MAJOR" -lt 26 ]]; then
+            echo "Xcode $XCODE_VERSION is too old for App Store Connect upload. Xcode 26 or later is required." >&2
+            exit 1
+          fi
+
+          if [[ "$IPHONEOS_SDK_MAJOR" -lt 26 ]]; then
+            echo "iPhoneOS SDK $IPHONEOS_SDK_VERSION is too old for App Store Connect upload. iOS 26 SDK or later is required." >&2
+            exit 1
+          fi
+
+          echo "Verified Xcode $XCODE_VERSION with iPhoneOS SDK $IPHONEOS_SDK_VERSION."
 
       - name: Resolve Xcode project dependencies
         run: xcodebuild -resolvePackageDependencies -project "$PROJECT_PATH" -scheme "$SCHEME"
@@ -232,6 +253,8 @@ jobs:
           codesign -dv "$APP_PATH" 2>&1 | sed -n '/Authority=/p;/TeamIdentifier=/p'
           codesign --verify --strict "$FRAMEWORK_PATH"
           codesign -dv "$FRAMEWORK_PATH" 2>&1 | sed -n '/Authority=/p;/TeamIdentifier=/p'
+          /usr/libexec/PlistBuddy -c 'Print :DTXcode' "$INFO_PLIST" || true
+          /usr/libexec/PlistBuddy -c 'Print :DTSDKName' "$INFO_PLIST" || true
           echo "Verified app bundle ID: $ACTUAL_BUNDLE_ID"
           echo "Verified app version: $ACTUAL_VERSION"
           echo "Verified app build: $ACTUAL_BUILD"
